@@ -465,6 +465,8 @@ class IndividualDashboardController extends Controller
         $filterByState = false;
         $distance_km = PlatformSettings::find(1)->distance_km;
         $latitude = $longitude = 0;
+        $searchTerm = "";
+        $apiKey = env("GOOGLE_MAP_API_KEY");
         
         \DB::enableQueryLog();
 
@@ -493,6 +495,14 @@ class IndividualDashboardController extends Controller
             if ($asset_location_state || $asset_location_lga) {
                 $filterByState = true;
             }
+        }
+
+
+        $filterByLocation = false;
+
+        if(isset($search_criteria[4]) && isset($request->asset_location_search)) {
+            $filterByLocation = true;
+            $searchTerm = $request->asset_location_search;
         }
 
         // if ($dimension_width && $dimension_height) {
@@ -546,10 +556,8 @@ class IndividualDashboardController extends Controller
         $asset_types_categories = [];
 
         if ($filterByState) {
-            $apiKey = env("GOOGLE_MAP_API_KEY");
             $state_name = State::find($asset_location_state)->state_name??"";
             $lga_name = LGA::where(['id' => $asset_location_lga, 'state_id' => $asset_location_state])->first()->lga_name??"";
-            $searchTerm = "";
 
             if ($state_name) {
                 $searchTerm = $state_name;
@@ -558,11 +566,15 @@ class IndividualDashboardController extends Controller
             if ($lga_name) {
                 $searchTerm .= ','. $lga_name;
             }
+        }
+
+        if ($filterByState || $filterByLocation)
+        {
 
             $endpoint = env("GOOGLE_MAP_API") . "/geocode/json?address=" . urlencode($searchTerm) . "&key=" . urlencode($apiKey);
 
             $response = $this->doCurlRequest($endpoint);
-            if($response['status'] && ($data = json_decode($response['data'], true))) {
+            if ($response['status'] && ($data = json_decode($response['data'], true))) {
                 if (count($data['results'])) {
                     $latitude = floatval(trim($data['results'][0]['geometry']['location']['lng']));
                     $longitude = floatval(trim($data['results'][0]['geometry']['location']['lat']));
@@ -570,11 +582,11 @@ class IndividualDashboardController extends Controller
                     // $longitude = floatval(trim($data['results'][0]['geometry']['location']['lng']));
                 }
                 else {
-                    $filterByState = false;
+                    $filterByState = $filterByLocation = false;
                 }
             }
             else {
-                $filterByState = false;
+                $filterByState = $filterByLocation = false;
             }
         }
 
@@ -587,7 +599,7 @@ class IndividualDashboardController extends Controller
 
             $distance = floatval($this->calculateDistance($asset_latitude, $asset_longitude, $latitude, $longitude));
 
-            if ($filterByState) {
+            if ($filterByState || $filterByLocation) {
                 if ($distance_km && $distance <= floatval($distance_km)) {
                     $asset->type = $asset->assetTypeRecord->type;
                     $asset->images = $asset->assetImagesRecord;
