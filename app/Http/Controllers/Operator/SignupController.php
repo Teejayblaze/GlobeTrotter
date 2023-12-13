@@ -61,6 +61,13 @@ class SignupController extends Controller
         // TODO: request for the operator's information from OAAN portal.
         $jsonResponse = json_decode($this->sendRequestNow(config('app.oaan_api_url') . "/verify/" . base64_encode($request->oaan_number)));
 
+        if (!$jsonResponse) {
+            return redirect()
+            ->back()
+            ->withErrors(['errors' => ['Unable to reach the OAAN server at the moment.']])
+            ->withInput();
+        }
+
         if ( $jsonResponse->status ) {
             $request->session()->put('op_verify_det', json_encode($jsonResponse));
             return redirect('/operator/verification');
@@ -103,7 +110,7 @@ class SignupController extends Controller
 
         $jsonResponse = json_decode($this->sendRequestNow(config('app.oaan_api_url') . '/set_status/'  . base64_encode($request->oaan_number)));
 
-        if(!$jsonResponse->status) {
+        if(!$jsonResponse || !$jsonResponse->status) {
             return redirect()->back()->withErrors(['errors' => ['Apologies, We are currently unable to set the status of your verification. Kindly try again soon.']])->withInput();
         }
 
