@@ -671,7 +671,6 @@ class IndividualDashboardController extends Controller
     private function get_transaction_tokens( int $corp_id )
     {
         $tokens = TransactionToken::where('corp_id', '=', $corp_id)->orderBy('status', 'desc')->get();
-        
         if ( count($tokens) ) {
             foreach ($tokens as $key => $token) {
 
@@ -681,13 +680,15 @@ class IndividualDashboardController extends Controller
 
                 $usedby_name = 'None Yet';
                 $corporate_name = 'None Yet';
+                $token_created_by = 'Unknown';
 
                 if ($user) $usedby_name = $user->lastname .' '. $user->firstname;
                 if ($corporate) $corporate_name = $corporate->name;
                 if (!$token->trnx_id) $token->trnx_id = 'None Yet';
+                if ($logged_user) $token_created_by = $logged_user->lastname .' '. $logged_user->firstname;
 
                 $token->usedby_name = $usedby_name;
-                $token->auth_by = $logged_user->lastname .' '. $logged_user->firstname;
+                $token->auth_by = $token_created_by;
                 $token->corporate_name = $corporate_name;
             }
         }
