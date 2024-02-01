@@ -47,13 +47,40 @@ class TransactionController extends Controller
 
     public function create_transaction(Request $request)
     {
-        $reserve_ref = $request->reserve_ref;
-        $booking_id = $request->booking_id;
         $payable = floatval(str_replace(',', '', $request->payable));
         $balance = floatval(str_replace(',', '', $request->actualbal));
+        $booking_type = $request->booking_type;
+        $reserve_ref = $request->reserve_ref;
         $first_installment = 0;
+        $booking_id = -1;
+        $count_trans = 0;
+        $where = [['asset_booking_ref', '=', $reserve_ref]];
 
-        $count_trans = Transaction::where([['asset_booking_id', '=', $booking_id], ['asset_booking_ref', '=', $reserve_ref]])->count();
+        if ($booking_type === 'single') {
+            $fields = ['type' => $booking_type];
+            $booking_id = $request->booking_id;
+            $pending_recs = $this->get_transaction_receipt(0, $booking_id, $fields);
+            if (count($pending_recs) && $balance < $pending_recs[0]->payment_remaining) {
+                $balance = $pending_recs[0]->payment_remaining;
+            }
+
+            $where[] = ['asset_booking_id', '=', $booking_id];
+        }
+        else {
+            $campaign_id = $request->campaign_id;
+            $campaign = $this->get_campaign_by_id($campaign_id);
+            $payment_remaining = ($campaign->total_price - $campaign->total_payment);
+            if ($balance < $payment_remaining) {
+                $balance = $payment_remaining;
+            }
+
+            $where[] = ['campaign_id', '=', $campaign_id];
+
+            $booking_id = $campaign_id;
+        }
+
+        $count_trans = Transaction::where($where)->count();
+        
 
         if ( $count_trans ) {
             $payperc = round(($payable / ($balance/100)),2);
@@ -66,8 +93,14 @@ class TransactionController extends Controller
             }
             $payperc .= '%';
             $payable = \number_format($payable, 2, '.', ',');
+
             $desc = "Generated payment schedule of ".$payperc." (".$payable.") from the asset balance of (". 
-            \number_format($balance, 2, '.', ',') .") for the asset with the reserved ref number: ". $reserve_ref;
+            \number_format($balance, 2, '.', ',') .") for the asset with the reserved reference number: ". $reserve_ref;
+
+            if ($booking_type === env('CAMPAIGN_BOOKING_TYPE')) {
+                $desc = "Generated payment schedule of ".$payperc." (".$payable.") from the campaign balance of (". 
+                \number_format($balance, 2, '.', ',') .") with the reserved reference number: ". $reserve_ref;
+            }
         }
         else {
             $first_installment = 1;
@@ -76,12 +109,17 @@ class TransactionController extends Controller
             $payperc .= '%';
             $payable = \number_format($payable, 2, '.', ',');
             $desc = "Generated payment schedule of 10% (". $payable . ") from the asset price of (".
-            \number_format($balance, 2, '.', ',').")  for the asset with the reserved ref number: ". $reserve_ref;
+            \number_format($balance, 2, '.', ',').") for the asset with the reserved reference number: ". $reserve_ref;
+
+            if ($booking_type === env('CAMPAIGN_BOOKING_TYPE')) {
+                $desc = "Generated payment schedule of 10% (". $payable . ") from the campaign total price of (".
+                \number_format($balance, 2, '.', ',').") with the reserved reference number: ". $reserve_ref;
+            }
         }
 
 
 
-        $transaction = $this->generate_transaction($booking_id, $payable, $desc, $reserve_ref, $payperc, $first_installment);
+        $transaction = $this->generate_transaction($booking_id, $payable, $desc, $reserve_ref, $payperc, $first_installment, $booking_type);
         if ( $transaction ) {
             return response()->json([
                 'status' => true,

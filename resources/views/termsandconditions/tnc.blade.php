@@ -1,5 +1,5 @@
 <style>
-   ol, li {
+   ol.list, ol.list li {
       list-style-type: decimal;
    }
 </style>
@@ -41,7 +41,7 @@
                </p>
                <p class="mb-3 fs-14">We recommend that you print a copy of these Legal Terms for your records.</p>
                <p class="terms-title mb-2 fs-14 fw-600"><strong>TABLE OF CONTENTS </strong></p>
-               <ol>
+               <ol class="list">
                   <li>OUR SERVICES </li>
                   <li>INTELLECTUAL PROPERTY RIGHTS </li>
                </ol>

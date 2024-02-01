@@ -8,6 +8,7 @@ use \App\AssetGracePeriod;
 use Carbon\Carbon;
 use \App\Individual;
 use \App\Asset;
+use \App\Campaign;
 
 ini_set ('soap.wsdl_cache_enabled', 0);
 
@@ -51,10 +52,18 @@ trait TransactionTrait
     }
 
 
-    public function generate_transaction( string $bookedId, string $amount, string $desc, string $booking_ref, string $perc, int $first_installment)
+    public function generate_transaction( string $bookedId, string $amount, string $desc, string $booking_ref, string $perc, int $first_installment, string $booking_type = 'single')
     {
         $transaction = new Transaction();
-        $transaction->asset_booking_id = $bookedId;
+
+        if ($booking_type === env('CAMPAIGN_BOOKING_TYPE')) {
+            $transaction->campaign_id = $bookedId;
+            $transaction->asset_booking_id = -1;
+        }
+        else {
+            $transaction->asset_booking_id = $bookedId;
+        }
+
         $transaction->tranx_id = $this->regenerate_transaction_id($bookedId);
         $transaction->description = $desc;
         $transaction->amount = $amount;
@@ -85,26 +94,73 @@ trait TransactionTrait
     }
 
 
-    public function get_transaction_receipt(int $completed_payment, int $booking_id)
+    public function get_campaign($user) {
+        $campaigns = Campaign::where(['user_id' => $user->user_id, 'user_type_id' => $user->user_type_id])->with('campaignDetails')->get();
+        return $campaigns;
+    }
+
+    public function get_campaign_by_id(int $campaign_id) 
     {
-        $asset_booking_recs = $this->get_asset_booked_by_current_advertiser($completed_payment, $booking_id)->get();
+        $campaign = Campaign::find($campaign_id);
+
+        if ($campaign->campaignDetails()->count() > 0) {
+            $campaignDetails = array_column($campaign->campaignDetails()->get()->toArray(), 'asset_id');
+            $campaign->assetBookings = AssetBooking::whereIn('asset_id', $campaignDetails)->get();
+            $campaign->total_price = Asset::whereIn('id', $campaignDetails)->sum('max_price');
+            $campaign->trnx_id = count($campaign->assetBookings) ? $campaign->assetBookings[0]->trnx_id : '';
+            $payment_records = $this->get_paid_receipts($campaign)->orderBy('id', 'asc')->get();
+            $campaign->paid_payment_records = $payment_records;
+            $campaign->payment_remaining_perc = $this->get_payment_remaining_percentage($payment_records->toArray());
+            $campaign->pending_payment_records = $this->get_pending_receipts($campaign)->orderBy('id', 'asc')->get();
+            $campaign->total_payment = $this->get_total_payment_amount($payment_records->toArray());;
+            $campaign->total_price_in_words = $this->amount_in_words(floatval($campaign->total_price));
+        }  
+        
+        return $campaign;
+    }
+
+
+    public function get_campaign_transactions($user) 
+    {
+        $campaigns = $this->get_campaign($user);
+        foreach($campaigns as $key => $campaign) {
+            if ($campaign->campaignDetails()->count() > 0) {
+                $campaignDetails = array_column($campaign->campaignDetails()->get()->toArray(), 'asset_id');
+                $campaign->assetBookings = AssetBooking::whereIn('asset_id', $campaignDetails)->get();
+                $campaign->total_price = Asset::whereIn('id', $campaignDetails)->sum('max_price');
+                $campaign->trnx_id = count($campaign->assetBookings) ? $campaign->assetBookings[0]->trnx_id : '';
+                $payment_records = $this->get_paid_receipts($campaign)->orderBy('id', 'asc')->get();
+                $campaign->paid_payment_records = $payment_records;
+                $campaign->payment_remaining_perc = $this->get_payment_remaining_percentage($payment_records->toArray());
+                $campaign->pending_payment_records = $this->get_pending_receipts($campaign)->orderBy('id', 'asc')->get();
+                $campaign->total_payment = $this->get_total_payment_amount($payment_records->toArray());
+            }   
+        }
+
+        return $campaigns;
+    }
+
+
+    public function get_transaction_receipt(int $completed_payment, int $booking_id, array $fields = [])
+    {
+
+        $asset_booking_recs = $this->get_asset_booked_by_current_advertiser($completed_payment, $booking_id, $fields)->get();
 
         foreach ($asset_booking_recs as $key => $asset_booking_rec) {
             $payment_records = $this->get_paid_receipts($asset_booking_rec)->orderBy('id', 'asc')->get();
             $total_payment_amount = $this->get_total_payment_amount($payment_records->toArray());
-
+            $asset_booking_rec->total_price_in_words = $this->amount_in_words(floatval($asset_booking_rec->asset->max_price));
             $asset_booking_rec->payment_records = count($payment_records->toArray()) ? $payment_records : [];
             $asset_booking_rec->payment_records_count = count($payment_records);
             $asset_booking_rec->payment_total = $total_payment_amount;
             $asset_booking_rec->payment_remaining = $this->get_payment_remaining_balance($total_payment_amount, floatval(str_replace(',', '', $asset_booking_rec->price)));
-            // dd($total_payment_amount, $asset_booking_rec->price, $asset_booking_rec->payment_remaining);
             $asset_booking_rec->payment_remaining_perc = $this->get_payment_remaining_percentage($payment_records->toArray());
-            
             $asset_booking_rec->real_asset_details = $this->get_asset_details($asset_booking_rec->asset_id);
-  
             $pending_payment_records = $this->get_pending_receipts($asset_booking_rec)->orderBy('id', 'asc')->get();
             $asset_booking_rec->pending_payment_records = $pending_payment_records;
         }
+
+
         return $asset_booking_recs;
     }
 
@@ -149,7 +205,7 @@ trait TransactionTrait
             $remaining_perc = ($pay_perc - $paid_perc);
         
         } else $remaining_perc = 10; 
-
+        
         return $remaining_perc;
     }
 
@@ -170,18 +226,24 @@ trait TransactionTrait
     }
 
 
-    public function get_asset_booked_by_current_advertiser( int $completed_payment, int $booking_id )
+    public function get_asset_booked_by_current_advertiser( int $completed_payment, int $booking_id, array $fields = [] )
     {
         $user = \Request::get('user');
         
-        $where = [
-            ['booked_by_user_id', '=', $user->user_id],
-            ['user_type_id', '=', $user->user_type_id],
-            ['locked', '=', 1],
-        ];
+        $where = [['locked', '=', 1]];
+
+        if ($user) {
+            $where[] = ['booked_by_user_id', '=', $user->user_id];
+            $where[] = ['user_type_id', '=', $user->user_type_id];
+        }
 
         if ($booking_id) array_push($where, ['id', '=', $booking_id]);
         if ($completed_payment !== -1) array_push($where, ['paycompleted', '=', $completed_payment]);
+        if (count($fields)) {
+            foreach ($fields as $field => $value) {
+                array_push($where, [$field, '=', $value]);
+            }
+        }
 
         $asset_booking_recs = AssetBooking::where($where);
 
@@ -221,7 +283,7 @@ trait TransactionTrait
      */
     public function check_asset_first_transaction_payment()
     {
-        $asset_booking_recs = $this->get_asset_booked_by_current_advertiser(0,0)->orderBy('created_at', 'desc')->get();
+        $asset_booking_recs = $this->get_asset_booked_by_current_advertiser(0,0,['type'=>env('SINGLE_BOOKING_TYPE')],env('SINGLE_BOOKING_TYPE'))->orderBy('created_at', 'desc')->get();
         
         $isMakePayment = true;
         foreach ($asset_booking_recs as $key => $asset_booking_rec) {
@@ -598,4 +660,126 @@ trait TransactionTrait
 
         return json_decode($decrypted);
     }
+
+    public function amount_in_words(float $amount) {
+        $words = array(
+            '',
+            'one',
+            'two',
+            'three',
+            'four',
+            'five',
+            'six',
+            'seven',
+            'eight',
+            'nine',
+            'ten',
+            'eleven',
+            'twelve',
+            'thirteen',
+            'fourteen',
+            'fifteen',
+            'sixteen',
+            'seventeen',
+            'eighteen',
+            'nineteen'
+        );
+        
+        $tens = array(
+            '',
+            '',
+            'twenty',
+            'thirty',
+            'forty',
+            'fifty',
+            'sixty',
+            'seventy',
+            'eighty',
+            'ninety'
+        );
+        
+        $groups = array(
+            '',
+            'thousand',
+            'million',
+            'billion',
+            'trillion',
+            'quadrillion',
+            'quintillion'
+        );
+        $amount = (float) $amount;
+        $words_string = '';
+        
+        if ($amount == 0) {
+            $words_string .= 'zero';
+        } else {
+            $amount_parts = explode('.', $amount);
+            $naira = (int) $amount_parts[0];
+            $kobo = isset($amount_parts[1]) ? (int) $amount_parts[1] : 0;
+            
+            // Convert naira to words
+            $naira_string = '';
+            $naira_group = 0;
+            
+            while ($naira > 0) {
+                $group = $naira % 1000;
+                $naira = floor($naira / 1000);
+                
+                if ($group > 0) {
+                    $group_string = '';
+                    
+                    $hundreds = floor($group / 100);
+                    $tens_units = $group % 100;
+                    
+                    if ($hundreds > 0) {
+                        $group_string .= $words[$hundreds] . ' hundred';
+                        if ($tens_units > 0) {
+                            $group_string .= ' and ';
+                        }
+                    }
+                    
+                    if ($tens_units < 20) {
+                        $group_string .= $words[$tens_units];
+                    } else {
+                        $group_string .= $tens[floor($tens_units / 10)];
+                        if ($tens_units % 10 > 0) {
+                            $group_string .= ' ' . $words[$tens_units % 10];
+                        }
+                    }
+                    
+                    $group_string .= ' ' . $groups[$naira_group];
+                    
+                    if (!empty($naira_string)) {
+                        $naira_string = $group_string . ', ' . $naira_string;
+                    } else {
+                        $naira_string = $group_string;
+                    }
+                }
+                
+                $naira_group++;
+            }
+            
+            $words_string .= $naira_string;
+            
+            // Convert kobo to words
+            if ($kobo > 0) {
+                $kobo_string = '';
+                if ($kobo < 20) {
+                    $kobo_string .= $words[$kobo];
+                } else {
+                    $kobo_string .= $tens[floor($kobo / 10)];
+                    if ($kobo % 10 > 0) {
+                        $kobo_string .= '-' . $words[$kobo % 10];
+                    }
+                }
+                $words_string .= ' and ' . $kobo_string . ' kobo only';
+            }
+            else {
+                $words_string .= ' naira only';
+            }
+        }
+        
+        // Output: One hundred twenty-three million, four hundred fifty-six thousand, seven hundred eighty-nine and ninety-eight kobo
+        return ucfirst($words_string);
+    }    
 }

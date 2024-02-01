@@ -62,22 +62,86 @@ class IndividualDashboardController extends Controller
         return redirect('/advertiser/login');
     }
 
-    public function pending_transactions()
+    public function pending_transactions(string $type = 'single')
     {
         $user = \Request::get('user');
-        $pending_tranx_recs = $this->get_transaction_receipt(0,0);
+        $fields = ['type' => $type];
+        $pending_tranx_recs = [];
+        $campaigns = [];
+        if ($type === env('CAMPAIGN_BOOKING_TYPE')) {
+            $campaigns = $this->get_campaign_transactions($user);
+        }
+        else {
+            $pending_tranx_recs = $this->get_transaction_receipt(0,0,$fields);
+        }
         $title = "Pending Transactions";
-        return view('advertiser.pendingtransaction', \compact('pending_tranx_recs', 'user', 'title'));
+        return view('advertiser.pendingtransaction', \compact('campaigns', 'pending_tranx_recs', 'user', 'title', 'type'));
     }
 
 
-    public function pending_transaction_payments_detail(int $booking_id = 0)
+    public function delete_pending_transactions(string $booking_id, string $booking_type = '', string $booking_type_id = '') 
+    {
+        if (!$booking_id) {
+            return redirect()->back()->with(["flash_error" => "Booking reference was not provided."]);
+        }
+        $assetBooking = AssetBooking::find($booking_id);
+        $trnx_id = $assetBooking->trnx_id;
+        $asset_id = $assetBooking->asset_id;
+        $assetBooking->delete();
+        Transaction::where("asset_booking_ref", $trnx_id)->delete();
+        if ($booking_type === env('CAMPAIGN_BOOKING_TYPE') && $booking_type_id) {
+            CampaignDetail::where(['campaign_id' => $booking_type_id, 'asset_id' => $asset_id])->delete();
+        }
+        return redirect()->back()->with(["flash_message" => "Successfully deleted the booking."]);
+    }
+
+
+    public function pending_transaction_payments_detail(string $type = 'single', int $booking_id = 0)
     {
         $user = \Request::get('user');
-        $asset_pending_recs = $this->get_transaction_receipt(0, $booking_id);
-        // dd($asset_pending_recs);
+        $fields = ['type' => $type];
+
+        $asset_pending_recs = [];
+        $campaign = null;
+        if ($type === env('CAMPAIGN_BOOKING_TYPE')) {
+            $campaign = $this->get_campaign_by_id($booking_id);
+        }
+        else {
+            $asset_pending_recs = $this->get_transaction_receipt(0, $booking_id, $fields);
+        }
+
+        $userInfo = new \stdClass();
+        $userInfo->designation = "Manager";
+        if ($user->user_type_id === intval(env('INDIVIDUAL_USER_TYPE'))) {
+
+            if ($user->corp_id) {
+                $corporate = Corporate::find($user->corp_id);
+                $userInfo->name = $corporate->name;
+                $userInfo->address = $corporate->address;
+                $userInfo->phone = $corporate->phone;
+                $userInfo->email = $corporate->email;
+            }
+            else {
+                $individual = Individual::find($user->id);
+                $userInfo->name = $individual->lastname .' '. $individual->firstname;
+                $userInfo->address = $individual->address;
+                $userInfo->phone = $individual->phone;
+                $userInfo->email = $individual->email;
+                $userInfo->designation = $individual->designation;
+            }
+        }
+        $operator = new \stdClass();
+        if (count($asset_pending_recs)) {
+            $operatorId = $asset_pending_recs[0]->asset->uploaded_by;
+            $operatorRec = $this->get_operator_by_id($operatorId);
+            $operator->corporateName = $operatorRec->corporate_name;
+            $operator->address = $operatorRec->address?$operatorRec->address:$operatorRec->oaan_number .', '. $operatorRec->email .', '. $operatorRec->phone;
+            $operator->designation = "CEO";
+        }
+
+        // dd($user, $userInfo, $operator, env('INDIVIDUAL_USER_TYPE'));
         $title = "Transaction Payment Details";
-        return view('advertiser.transactionpaymentsdetail', \compact('asset_pending_recs', 'user', 'title')); 
+        return view('advertiser.transactionpaymentsdetail', \compact('campaign', 'asset_pending_recs', 'user', 'title', 'userInfo', 'operator', 'type')); 
     }
 
     
@@ -752,18 +816,6 @@ class IndividualDashboardController extends Controller
                 return in_array($value, $campaign_asset_exist_asset_id_arry);
             });
 
-            // Get the records for the existed asset id.
-            // foreach ($asset_id_intercept as $key => $value) {
-                 
-            // }
-
-            // dd(
-            //     "campaign_details_found_asset_id_arry = ", $campaign_details_found_asset_id_arry, 
-            //     "campaign_details_found_id_arry = ", $campaign_details_found_id_arry,  
-            //     "campaign_asset_exist = ", $campaign_asset_exist, 
-            //     "campaign_asset_exist_asset_id_arry = ",  $campaign_asset_exist_asset_id_arry, 
-            //     "asset_id_intercept = ", $asset_id_intercept);
-
             return $asset_id_intercept;
         }
     }
@@ -922,14 +974,14 @@ class IndividualDashboardController extends Controller
                 CampaignDetail::create([
                     'campaign_id' => $campaign['campaign_id'],
                     'asset_id' => $campaign['item_id'],
-                    'qty' => $campaign['qty'],
+                    'qty' => 1,
                     'created_at' => date('Y-m-d H:i:s', time()),
                     'updated_at' => date('Y-m-d H:i:s', time())
                 ]);
                 array_push($success_push, [
                     'campaign_id' => $campaign['campaign_id'],
                     'item_id' => $campaign['item_id'],
-                    'qty' => $campaign['qty'],
+                    'qty' => 1,
                     'price' => $campaign['price'],
                     'name' => $campaign['name'],
                 ]);

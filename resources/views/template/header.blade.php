@@ -237,6 +237,9 @@
                                     <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/transactions/pending') }}">Pending Transactions</a>
                                 </li>
                                 <li>
+                                    <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/transactions/pending/campaign') }}">Campaign Transactions</a>
+                                </li>
+                                <li>
                                     <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/transactions/historical') }}">Historical Transactions</a>
                                 </li>
                             </ul>

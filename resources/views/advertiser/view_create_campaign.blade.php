@@ -166,23 +166,29 @@
 
         .suggestions.scale-suggestion {
             height: 140px;
+            display: flex;
+            flex-flow: row nowrap;
+            justify-content: center;
+            margin: 21px 0px 0px 10px;
         }
 
         .open-sug {
             padding: 10px;
             display: block;
             width: 150px;
-            background: linear-gradient(#ffffff 20%, #ddd 80%);
+            background: linear-gradient(#E71755 20%, #f9958b 80%);
             transform: translate(-50%);
             margin-left: 50%;
             position: relative;
             margin-top: 8px;
             cursor: pointer;
             border-radius: 200px;
+            margin-bottom: 12px;
+            text-align: center;
         }
 
         .open-sug:hover {
-            background: linear-gradient(#ddd 20%, #ffffff 80%); 
+            background: linear-gradient(#f9958b 20%, #e71717 80%);
         }
 
         .suggestions .suggest-img .sug-informatics {
@@ -191,7 +197,7 @@
             height: 100%;
             padding: 8px;
             background-color: #ffffffd1;
-            opacity: 0;
+            opacity: 1;
             transition: opacity .4s linear 0s; 
         }
 
@@ -216,15 +222,13 @@
         .suggestions .suggest-img .sug-informatics a:nth-child(1) {
             background-color: #3300659e;
             color: #fff;
-            border-top-left-radius: 3px;
-            border-bottom-left-radius: 3px;
+            border-radius: 35px;
         }
 
         .suggestions .suggest-img .sug-informatics a:nth-child(2) {
             background-color: #3aacedb8;
             color: #fff;
-            border-top-right-radius: 3px;
-            border-bottom-right-radius: 3px;
+            border-radius: 35px;
         }
         
 
@@ -240,6 +244,13 @@
 
         .pending-transactions-table tbody tr td {
             vertical-align: middle;
+        }
+
+        button {
+            color: #fff;
+            background-color: #c40b0b;
+            border: none;
+            border-radius: 10px;
         }
 
     </style>
@@ -265,6 +276,11 @@
                                     <a href="{{url('/advertiser/individual/create/campaign')}}" class="btn create-btn smaller">Create Campaign<i class="fal fa-plus"></i></a>
                                 </div>
                                 <div class="col-lg-12 pending-transactions-table-div pt-10 pb-10">
+                                    @if (session()->has('flash_error'))
+                                        <div class="alert alert-danger">
+                                            <span>{{session()->get('flash_error')}}</span>
+                                        </div>
+                                    @endif
                                     <table class="pending-transactions-table">
                                         <tbody>
                                             <tr>
@@ -277,111 +293,85 @@
                                                             <a href="{{url('/advertiser/individual/create/campaign')}}" class="btn create-btn smaller">Create Campaign<i class="fal fa-plus"></i></a>
                                                         </div>
                                                     @else
+                                                        <?php $is_asset_booked_class = ""; ?>
                                                         @foreach($campaigns_found as $key => $campaigns)
                                                             <div class="col-md-12">
                                                                 <div class="campaign-title">
                                                                     <h3>{{$campaigns->name}} ({{$campaigns->start_date}})</h3>
-                                                                    @if (count($campaigns->campaignDetails))
-                                                                        <a href="{{url('/advertiser/individual/create/campaign/'.$campaigns->id)}}" target="_blank" class="btn create-btn smaller">Add more items to campaign cart<i class="fal fa-cart-plus"></i></a>
+                                                                    @if ($campaigns->id)
+                                                                        <a href="{{url('/advertiser/individual/create/campaign/'.$campaigns->id)}}" target="_blank" class="btn create-btn smaller">Add items to campaign cart<i class="fal fa-cart-plus"></i></a>
                                                                     @endif
                                                                     <p class="clearfix"></p>
                                                                 </div>
                                                                 <div class="campaign-list">
                                                                     <?php $grndtot = 0; ?>
                                                                     @if (count($campaigns->campaignDetails))
-                                                                        <div class="col-lg-12 pending-transactions-table-div pt-10 pb-10">
-                                                                            <table class="pending-transactions-table">
-                                                                                <tbody>
-                                                                                    @foreach($campaigns->campaignDetails as $idx => $campaignDetail)
-                                                                                        <?php $is_asset_booked_class = ""; ?>
-                                                                                        @if (in_array($campaignDetail->asset_id, $campaigns->booked_asset_id_arry)) <?php $is_asset_booked_class = " existed" ?> @endif
-                                                                                        @if ($campaignDetail->assetDetails)
-                                                                                            <?php $grndtot+= $campaignDetail->assetDetails->max_price ?>
-                                                                                            <tr class="campaign-items{{$is_asset_booked_class}}">
-                                                                                                <td class="fs-14 sm-fs-12 p-0">
-                                                                                                    <div class="cimages">
-                                                                                                        <!-- disk('local')-> -->
-                                                                                                        @foreach($campaignDetail->assetDetails->assetImages as $imgdx => $assetImage)
-                                                                                                            @if ( ($imgdx+1) % 2 === 0 )
-                                                                                                                <div class="right" style="background: url('{{Storage::url($assetImage->image_path)}}') no-repeat center center/cover #eee;"></div>
-                                                                                                            @else
-                                                                                                                <div class="left" style="background: url('{{Storage::url($assetImage->image_path)}}') no-repeat center center/cover;"></div>
-                                                                                                            @endif
-                                                                                                            <?php if (($imgdx+1) === 4) break; ?>
-                                                                                                        @endforeach
-                                                                                                    </div>    
-                                                                                                </td>
-                                                                                                <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->name}}</td>
-                                                                                                <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->address}}</td>
-                                                                                                <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->asset_dimension_width.'m x '.$campaignDetail->assetDetails->asset_dimension_height.'m'}}</td>
-                                                                                                <td class="fs-14 sm-fs-12 p-0">
-                                                                                                    @if (strtolower($campaignDetail->assetDetails->assetTypeRecord->type) == strtolower('LAMP POST'))
-                                                                                                        <span><input type="text" maxlength="3" style="width: 36px; padding: 6px; margin-bottom: 0;" value="{{$campaignDetail->qty}}"></span>
-                                                                                                    @else
-                                                                                                        <span>{{$campaignDetail->qty}}</span>
-                                                                                                    @endif    
-                                                                                                </td>
-                                                                                                <td class="fs-14 sm-fs-12 p-0">&#8358;{{ number_format(str_replace(',', '', $campaignDetail->assetDetails->max_price), 2, '.', ',') }}</span></td>
-                                                                                                <td class="fs-14 sm-fs-12 p-0">
-                                                                                                    @if ($campaignDetail->assetDetails->asset_category == 'mobile')
-                                                                                                        {{ ucwords($campaignDetail->assetDetails->advert_type .' '. $campaignDetail->assetDetails->asset_category) }}
-                                                                                                    @else
-                                                                                                        {{ ucwords($campaignDetail->assetDetails->asset_category) }}
-                                                                                                    @endif
-                                                                                                </td>
-                                                                                                <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->payment_freq}}</td>
-                                                                                                <td class="fs-14 sm-fs-12 p-0">
-                                                                                                    <a href="{{url('/advertiser/individual/remove/campaign/'.$campaignDetail->id)}}" class="">Remove <i class="fal fa-times"></i></a>
-                                                                                                </td>
-                                                                                            </tr>
-                                                                                        @else 
-                                                                                            <tr>
-                                                                                                <td colspan="9" class="fs-14 sm-fs-12 p-0">
-                                                                                                    <p>There are no item(s) in this campaign cart.</p>
-                                                                                                    <a href="{{url('/advertiser/individual/create/campaign/'.$campaigns->id)}}" class="btn create-btn smaller">Add items to campaign cart<i class="fal fa-cart-plus"></i></a>
-                                                                                                </td>
-                                                                                            </tr>
-                                                                                        @endif
-
-                                                                                        @if($is_asset_booked_class)
-                                                                                            <tr>
-                                                                                                <td colspan="9" class="fs-14 sm-fs-12 p-0">
-                                                                                                    <p style="display: block; float: none; text-align: center; clear: both; margin-top: 72px;">This Asset has been booked by another advertiser thus no longer available for payment or booking.</p>
-                                                                                                    @if(count($campaigns->asset_suggestions))
-                                                                                                    <p style="float: none;">Kindly find suggested asset similar to this one.</p>
-                                                                                                        <a href="javascript://" class="open-sug">Open Suggestion</a>
-                                                                                                        <div class="suggestions">
-                                                                                                            @if(isset($campaigns->asset_suggestions[$campaignDetail->asset_id]))
-                                                                                                                @foreach($campaigns->asset_suggestions[$campaignDetail->asset_id] as $sugkey => $sugAsset)
-                                                                                                                    <div class="suggest-img" style="
-                                                                                                                        background: url('{{Storage::url($sugAsset->assetImagesRecord[0]->image_path)}}') 
-                                                                                                                        no-repeat center center/cover; border: 2px solid #fff; border-radius: 3px; position:relative">
-                                                                                                                        <div class="sug-informatics">
-                                                                                                                            <p style="font-size: 14px;margin-bottom: 5px;">{{$sugAsset->name}}</p>
-                                                                                                                            <p><i class="fal fa-coins"></i> &#8358;{{ number_format(str_replace(',', '', $sugAsset->max_price), 2, '.', ',') }}</p>
-                                                                                                                            <p><i class="fal fa-street-view"></i> {{ $sugAsset->assetLGARecords->lga_name .', '. $sugAsset->assetStateRecords->state_name. ' State'}}</p>
-                                                                                                                            <p><a href="{{url('/asset/'.$sugAsset->id.'/detail')}}" target="_blank">View Detail</a><a href="{{url('/advertiser/individual/replace/campaign/'.$campaignDetail->asset_id.'/'.$sugAsset->id)}}">Replace Site</a></p>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                @endforeach
-                                                                                                            @endif
-                                                                                                        </div>
-                                                                                                    @else 
-                                                                                                        <p style="float: none;">Apologies, there are no suggestions at the moment.</p>
-                                                                                                    @endif
-                                                                                                </td>
-                                                                                            </tr>
-                                                                                        @endif
-                                                                                    @endforeach
-                                                                                    <tr>
-                                                                                        <td colspan="9" class="fs-14 sm-fs-12 p-0">
-                                                                                            <p style="display: inline-block;"><a href="#">Generate Dealslip and Make Payment &raquo;</a></p>
-                                                                                            <p style="font-weight:bolder; float:right; margin-right:40px;">Grand Total&nbsp;&nbsp;&nbsp;&#8358;{{ number_format(str_replace(',', '', $grndtot), 2, '.', ',') }}</p>
-                                                                                        </td>
-                                                                                    </tr>
-                                                                                </tbody>
-                                                                            </table>
-                                                                        </div>
+                                                                        <form method="post" action="{{url('/asset/campaign/create/transaction')}}" enctype="application/x-www-form-urlencoded">
+                                                                            @csrf
+                                                                            <input type="hidden" name="campaign_id" value="{{ $campaigns->id }}" class="required">
+                                                                            <input type="hidden" name="booked_by_user_id" value="{{ $user->user_id }}" class="required">
+                                                                            <input type="hidden" name="user_type_id" value="{{ $user->user_type_id }}" class="required">
+                                                                            <div class="col-lg-12 pending-transactions-table-div pt-10 pb-10">
+                                                                                <table class="pending-transactions-table">
+                                                                                    <tbody>
+                                                                                        @foreach($campaigns->campaignDetails as $idx => $campaignDetail)
+                                                                                            @if (in_array($campaignDetail->asset_id, $campaigns->booked_asset_id_arry)) <?php $is_asset_booked_class = " existed" ?> @endif
+                                                                                            @if ($campaignDetail->assetDetails)
+                                                                                                <?php $grndtot+= $campaignDetail->assetDetails->max_price ?>
+                                                                                                <tr class="campaign-items{{$is_asset_booked_class}}">
+                                                                                                    <td class="fs-14 sm-fs-12 p-0">
+                                                                                                        <div class="cimages">
+                                                                                                            <!-- disk('local')-> -->
+                                                                                                            @foreach($campaignDetail->assetDetails->assetImages as $imgdx => $assetImage)
+                                                                                                                @if ( ($imgdx+1) % 2 === 0 )
+                                                                                                                    <div class="right" style="background: url('{{Storage::url($assetImage->image_path)}}') no-repeat center center/cover #eee;"></div>
+                                                                                                                @else
+                                                                                                                    <div class="left" style="background: url('{{Storage::url($assetImage->image_path)}}') no-repeat center center/cover;"></div>
+                                                                                                                @endif
+                                                                                                                <?php if (($imgdx+1) === 4) break; ?>
+                                                                                                            @endforeach
+                                                                                                        </div>    
+                                                                                                    </td>
+                                                                                                    <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->name}}</td>
+                                                                                                    <input type="hidden" name="aid[]" value="{{ $campaignDetail->assetDetails->id }}" class="required">
+                                                                                                    
+                                                                                                    <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->address}}</td>
+                                                                                                    <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->asset_dimension_width.'m x '.$campaignDetail->assetDetails->asset_dimension_height.'m'}}</td>
+                                                                                                    <td class="fs-14 sm-fs-12 p-0">
+                                                                                                        <span>&#8358;{{ number_format(str_replace(',', '', $campaignDetail->assetDetails->max_price), 2, '.', ',') }}</span>
+                                                                                                        <input type="hidden" name="price[]" value="{{ $campaignDetail->assetDetails->max_price }}" class="required">
+                                                                                                    </td>
+                                                                                                    <td class="fs-14 sm-fs-12 p-0">
+                                                                                                        @if ($campaignDetail->assetDetails->asset_category == 'mobile')
+                                                                                                            {{ ucwords($campaignDetail->assetDetails->advert_type .' '. $campaignDetail->assetDetails->asset_category) }}
+                                                                                                        @else
+                                                                                                            {{ ucwords($campaignDetail->assetDetails->asset_category) }}
+                                                                                                        @endif
+                                                                                                    </td>
+                                                                                                    <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->payment_freq}}</td>
+                                                                                                    <td class="fs-14 sm-fs-12 p-0">
+                                                                                                        <a href="{{url('/advertiser/individual/remove/campaign/'.$campaignDetail->id)}}" class="">Remove <i class="fal fa-times"></i></a>
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            @else 
+                                                                                                <tr>
+                                                                                                    <td colspan="9" class="fs-14 sm-fs-12 p-0">
+                                                                                                        <p>There are no item(s) in this campaign cart.</p>
+                                                                                                        <a href="{{url('/advertiser/individual/create/campaign/'.$campaigns->id)}}" class="btn create-btn smaller">Add items to campaign cart<i class="fal fa-cart-plus"></i></a>
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            @endif
+                                                                                        @endforeach
+                                                                                        <tr>
+                                                                                            <td colspan="9" class="fs-14 sm-fs-12 p-0">
+                                                                                                <p style="display: inline-block;"><button type="submit">Generate Dealslip and Make Payment &raquo;</button></p>
+                                                                                                <p style="font-weight:bolder; float:right; margin-right:40px;">Grand Total&nbsp;&nbsp;&nbsp;&#8358;{{ number_format(str_replace(',', '', $grndtot), 2, '.', ',') }}</p>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        </form>
                                                                     @else 
                                                                         <div class="campaign-items">
                                                                             <p>No active cart record.</p>
@@ -390,6 +380,12 @@
                                                                 </div>
                                                             </div>
                                                         @endforeach
+                                                        @if($is_asset_booked_class)
+                                                            <p style="text-align: center; color:#d72828">
+                                                                If you notice a light red stripe around each of your added campaign asset, <br>
+                                                                it's because you or someone else must have added or book the asset before (active state).
+                                                            </p>
+                                                        @endif
                                                     @endif
                                                 </th>
                                             </tr>

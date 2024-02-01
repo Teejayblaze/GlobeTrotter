@@ -33,7 +33,7 @@ export function Corporate(obj) {
     this.auth_staff = obj.auth_staff ? obj.auth_staff : null;
 }
 
-export function validateCorporateInformation(form) {
+export function validateCorporateInformation(form, type="Corporate") {
 
     this.valid = true;
     this.validation_errors = [];
@@ -63,7 +63,7 @@ export function validateCorporateInformation(form) {
             let maildomain = email.split('@')[1];
 
             if (webdomain !== maildomain) {
-                self.validation_errors.push('<strong>' + elm.data('value') + '</strong> domain does not match the website domain hence the provided <strong>Corporate email address</strong> is not valid.');  
+                self.validation_errors.push('<strong>' + elm.data('value') + '</strong> domain does not match the website domain hence the provided <strong>'+ type +' email address</strong> is not valid.');  
                 self.valid = false;
             }
         }

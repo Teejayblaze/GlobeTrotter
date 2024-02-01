@@ -50,7 +50,7 @@
                 </div>
                 <div class="col-6 col-md-4 col-lg-3">
                     <div class="category-item wow fadeInRightBig" data-wow-duration="1s" data-wow-delay="1.50s">
-                    <a href="{{ url('/advertiser/corporate') }}">
+                    <a href="{{ url('/advertiser/government') }}">
                         <div class="category-icon">
                             <i class="fal fa-users"></i>
                         </div>
