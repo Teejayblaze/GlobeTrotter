@@ -792,7 +792,7 @@
                                             <div class="hover-board">
                                                 <input type="checkbox" name="assets-check" id="check-asset-{{$key}}" style="display:none;" data-name="{{$asset->name}}" data-price="{{$asset->max_price}}" data-id="{{$asset->id}}">
                                                 <label for="check-asset-{{$key}}">
-                                                    <div class="img-holder listing-item wow fadeIn" data-wow-duration="2.5s" data-wow-delay=".25s">
+                                                    <div class="img-holder wow fadeIn" data-wow-duration="2.5s" data-wow-delay=".25s">
                                                         <span class="listing-badge">Available</span>
                                                         <div class="listing-img">
                                                             <img src="{{ Storage::url($asset->assetImagesRecord[$rand]->image_path) }}" alt="Featured image">

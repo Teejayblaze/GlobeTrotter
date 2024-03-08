@@ -66,7 +66,6 @@ Route::namespace('Advertiser')->group(function(){
 Route::namespace('Advertiser')->prefix('advertiser')->group(function () {
     
     // Route::get('/signup', 'SignupController@advertiser_signup_form');
-    Route::get('/corporate', 'SignupController@advertiser_signup_form');
     Route::get('/individual', 'SignupController@advertiser_signup_form');
     
     Route::get('/welcome/{name}/{token}', 'SignupController@welcome')->name('welcome');
@@ -76,6 +75,7 @@ Route::namespace('Advertiser')->prefix('advertiser')->group(function () {
     Route::get('/login', 'SignupController@login_view')->name('advertiser_login');
     
     Route::post('/login', 'SignupController@login');
+    Route::get('/{slug}', 'SignupController@advertiser_signup_form');
 
     // Route::get('/dashboard', 'SignupController@dashboard')->name('dashboard');
 
@@ -91,10 +91,11 @@ Route::namespace('Advertiser')->prefix('advertiser')->group(function () {
     Route::middleware(['individual'])->prefix('individual')->group(function () {
         Route::get('/dashboard', 'IndividualDashboardController@dashboard')->name('IndividualDashboard');
         Route::get('/logout', 'IndividualDashboardController@logout');
-        Route::get('/transactions/pending', 'IndividualDashboardController@pending_transactions')->name('individaulPendingTransaction'); 
+        Route::get('/transactions/pending/{type?}', 'IndividualDashboardController@pending_transactions')->name('individaulPendingTransaction'); 
+        Route::get('/transactions/pending/{booking_id}/{booking_type?}/{booking_type_id?}/delete', 'IndividualDashboardController@delete_pending_transactions'); 
         Route::get('/payment-history', 'IndividualDashboardController@payment_history')->name('individaulPaymentHistory'); 
         Route::get('/transactions/historical', 'IndividualDashboardController@transaction_history')->name('individaulTransactionHistory');
-        Route::get('/pending/transaction/payments/detail/{booking_id}', 'IndividualDashboardController@pending_transaction_payments_detail');
+        Route::get('/pending/transaction/payments/detail/{type}/{booking_id}', 'IndividualDashboardController@pending_transaction_payments_detail');
         Route::get('/paid/transaction/payments/detail/{booking_id}', 'IndividualDashboardController@paid_transaction_payments_detail');
         Route::get('/pending/transaction/payments/regenerate-reference/{booking_id}/{tranx_id}', 'IndividualDashboardController@regenerateTransactionReference'); 
         Route::get('/generate/nibbs-transaction-code', 'IndividualDashboardController@generate_nibbs_transaction_code');
@@ -113,6 +114,7 @@ Route::namespace('Advertiser')->prefix('advertiser')->group(function () {
         Route::get('/view/campaign', 'IndividualDashboardController@campaign_view');
         Route::get('/replace/campaign/{old_asset_id?}/{new_asset_id?}', 'IndividualDashboardController@replace_campaign_view');
         Route::get('/remove/campaign/{campaign_id?}', 'IndividualDashboardController@remove_campaign_view');
+
         Route::get('/fast-track', 'IndividualDashboardController@fast_track');
         Route::get('/fast-track/exit', 'IndividualDashboardController@exit_fast_track');
 
@@ -194,7 +196,8 @@ Route::namespace('Asset')->middleware('asset')->prefix('asset')->group(function(
 
     Route::middleware(['individual'])->group(function() {
         Route::get('transactions/{tranx_id?}', 'TransactionController@transactions')->name('transactions');
-        Route::post('book', 'AssetController@book_asset')->name('book_asset');   
+        Route::post('book', 'AssetController@book_single_asset')->name('book_asset');   
+        Route::post('/campaign/create/transaction', 'AssetController@book_asset_campaign');
     });
 });
 

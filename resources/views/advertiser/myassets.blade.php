@@ -67,24 +67,7 @@
                                     @endforelse
                                     {{-- @if (count($asset_recs)) --}}
                                     <div class="pagination-area">
-                                        {!! $asset_recs->links() !!}
-                                        {{-- <div aria-label="Page navigation example">
-                                            <ul class="pagination">
-                                                <li class="page-item">
-                                                    <a class="page-link" href="#" aria-label="Previous">
-                                                        <span aria-hidden="true"><i class="far fa-angle-double-left"></i></span>
-                                                    </a>
-                                                </li>
-                                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                                <li class="page-item">
-                                                    <a class="page-link" href="#" aria-label="Next">
-                                                        <span aria-hidden="true"><i class="far fa-angle-double-right"></i></span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </div> --}}
+                                        {!! $asset_recs->render() !!}
                                     </div>
                                     {{-- @endif --}}
                                 </div>

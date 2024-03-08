@@ -211,7 +211,7 @@
                     <div class="user-profile-card add-property">
                         <div class="col-lg-12 pending-transactions-table-div pt-10 pb-10">
                             <h4>Apologies</h4>
-                            <p>We are currently unable to find the resource you are looking for at the moment.</p>
+                            <p>We are currently unable to find the asset you are looking for.</p>
                             <p>Kindly try again some other time.</p>
                             <br>
                             <a href="{{ url()->previous() }}" class="btn color2-bg flat-btn">Search Again?<i class="fal fa-home"></i></a>

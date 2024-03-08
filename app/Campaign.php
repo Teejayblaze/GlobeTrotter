@@ -12,4 +12,9 @@ class Campaign extends Model
     {
         return $this->hasMany(CampaignDetail::class, 'campaign_id');
     }
+
+    public function transaction() 
+    {
+        return $this->hasMany(Transaction::class, 'campaign_id');
+    }
 }

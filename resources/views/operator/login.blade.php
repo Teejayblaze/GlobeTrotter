@@ -14,7 +14,7 @@
                  <div class="login-form login-form-two wow slideInDown" data-wow-duration="2.5s" data-wow-delay=".25s">
                      <div class="login-header">
                          <img src="{{asset("img/logo/logo.png")}}" alt="">
-                         <p>Log in as an <strong>Asset Onwer</strong></p>
+                         <p>Log in as an <strong>Asset Owner</strong></p>
                      </div>
                     @if ( $errors->any() )
                     <div class="alert alert-danger">

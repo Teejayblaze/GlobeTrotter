@@ -13,7 +13,7 @@ trait UserProfileTrait
     public function set_user_profile($user)
     {
         // Retrive Corporate User Info
-        if ( $user->user_type_id === 1 && $user->operator === 0 ) {
+        if ( $user->user_type_id === intval(env('CORPORATE_USER_TYPE')) && $user->operator === 0 ) {
 
             $corporate = Corporate::where([['id', '=', $user->user_id], ['email', '=', $user->email]])->first();
             
@@ -25,7 +25,7 @@ trait UserProfileTrait
                 if (!\session()->has('corporate')) session()->put('corporate', $corporate);
             } 
         }
-        else if ( $user->user_type_id === 2 && $user->operator === 0 ) {
+        else if ( $user->user_type_id === intval(env('INDIVIDUAL_USER_TYPE')) && $user->operator === 0 ) {
             
             $individual = Individual::where([['id', '=', $user->user_id], ['email', '=', $user->email]])->first();
 
@@ -69,6 +69,10 @@ trait UserProfileTrait
         }
     }
 
+
+    public function get_operator_by_id(int $operatorId = 0) {
+        return Operator::find($operatorId);
+    }
 
 
     public function get_user_profile(string $key) {

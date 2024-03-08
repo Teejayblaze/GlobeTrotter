@@ -180,17 +180,32 @@ $(document).ready(function(){
             payable = amt_payable;
         }
 
-
-
-
         self.attr('disabled', 'disabled');
 
-        window.axios.post('/api/v1/generate/transaction', {
-            reserve_ref: $('#reserve_id').val().trim(),
-            booking_id: $('#booking_id').val().trim(),
-            payable: payable,
-            actualbal: $('#actual_bal').val().trim(),
-        }).then(
+        let booking_type = $('input[name*="type"]').val().trim();
+        
+        let payload = null;
+        if (booking_type && booking_type === 'single') {
+            payload = {
+                payable,
+                booking_type,
+                reserve_ref: $('#reserve_id').val().trim(),
+                booking_id: $('#booking_id').val().trim(),
+                actualbal: $('#actual_bal').val().trim(),
+            }
+        }
+        else if (booking_type && booking_type === 'campaign') {
+            let campaign_id = $('input[name*="campaign_id"]').val().trim();
+            payload = {
+                campaign_id,
+                payable,
+                booking_type,
+                reserve_ref: $('#reserve_id').val().trim(),
+                actualbal: $('#actual_bal').val().trim(),
+            }
+        }
+
+        window.axios.post('/api/v1/generate/transaction', payload).then(
         function(response) {
             console.log('response = ', response);
             if ( response.data.status ) {

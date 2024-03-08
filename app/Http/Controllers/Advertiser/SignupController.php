@@ -27,15 +27,15 @@ class SignupController extends Controller
 
     public function __construct()
     {
-        $this->userTypes = [1,2]; // 1 => corporate , 2 => individual.
+        $this->userTypes = [intval(env('CORPORATE_USER_TYPE')), intval(env('INDIVIDUAL_USER_TYPE'))]; // 1 => corporate , 2 => individual.
     }
 
     // return the form for creating an advertiser.
-    public function advertiser_signup_form()
+    public function advertiser_signup_form(string $slug = 'corporate')
     {
         // return view('advertiser.signup');
         $title = "Advertiser Registration";
-        return view('advertiser.register', compact("title"));
+        return view('advertiser.register', compact("title", "slug"));
     }
 
     /**

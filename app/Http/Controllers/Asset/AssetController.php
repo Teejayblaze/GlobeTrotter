@@ -11,6 +11,7 @@ use \App\TransactionToken;
 use \App\PlatformSettings;
 use \App\LCDA;
 use \App\AssetProximity;
+use \App\Campaign;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -194,15 +195,7 @@ class AssetController extends Controller
         }
     }
 
-    public function book_asset(Request $request, AssetBooking $assetBooking)
-    {
-        $start_date                 = new Carbon($request->start_date);
-        $end_date                   = new Carbon($request->end_date);
-        $d                          = new Carbon($request->end_date);
-        $next_availability_date     = $d->addDay();
-        $aid                        = $request->aid;
-        $price                      = floatval(str_replace(',', '', $request->price));
-
+    public function book_single_asset(Request $request) {
         if (!$this->check_asset_first_transaction_payment()) {
             return response()->json([
                 'status' => false,
@@ -211,13 +204,26 @@ class AssetController extends Controller
             ]);
         }
 
-        $existing = $assetBooking->where(function ($query) use ($aid, $start_date, $end_date) {
+        $requestObject = new \stdClass();
+        $requestObject->start_date = $request->start_date;
+        $requestObject->end_date = $request->end_date;
+        $requestObject->aid = $request->aid;
+        $requestObject->price = $request->price;
+        $requestObject->booked_by_user_id = $request->booked_by_user_id;
+        $requestObject->user_type_id = $request->user_type_id;
+        $requestObject->type = env('SINGLE_BOOKING_TYPE');;
+        $requestObject->booking_id = 'Ast/bk/' . date('Y') . '/' . $this->generate_transaction_id(5) . '/' . str_pad($request->booked_by_user_id, 4, '0', STR_PAD_LEFT);
+
+
+        $start_date                 = new Carbon($request->start_date);
+        $end_date                   = new Carbon($request->end_date);
+        $aid                        = $request->aid;
+        $existing = AssetBooking::where(function ($query) use ($aid, $start_date, $end_date) {
             $query->where([['locked', '=', 1], ['asset_id', '=', $aid], ['start_date', '<=', $start_date], ['end_date', '>=', $start_date]])
                 ->orWhere([['locked', '=', 1], ['asset_id', '=', $aid], ['start_date', '<=', $end_date], ['end_date', '>=', $end_date]]);
         })->first();
 
         if ($existing) {
-
             $who = 'another advertiser';
             if ($request->booked_by_user_id == $existing->booked_by_user_id) $who = 'You';
             return response()->json([
@@ -225,105 +231,214 @@ class AssetController extends Controller
                 'errors' => '<li class="fs-13">Apologies, This Asset has been booked by <strong>' . $who . '</strong> and your specified period is within its booked period.</li>',
                 'success' => null
             ]);
-        } else {
-            $is_existing = $this->check_asset_existence($assetBooking, $aid, $start_date, $end_date);
+        } 
 
-            if ($is_existing === false) {
+        $asset_data = $this->book_asset($requestObject);
 
-                $grace_period_started = Carbon::now();
+        if ($asset_data && is_array($asset_data) && $asset_data['status']) {
 
-                $booking_id                             = 'Ast/bk/' . date('Y') . '/' . $this->generate_transaction_id(5) . '/' . str_pad($request->booked_by_user_id, 4, '0', STR_PAD_LEFT);
-                $assetBooking->start_date               = $start_date;
-                $assetBooking->end_date                 = $end_date;
-                $assetBooking->next_availability_date   = $next_availability_date;
-                $assetBooking->grace_period_started     = $grace_period_started;
-                $assetBooking->asset_id                 = $aid;
-                $assetBooking->locked                   = 1;
-                $assetBooking->booked_by_user_id        = $request->booked_by_user_id;
-                $assetBooking->user_type_id             = $request->user_type_id;
-                $assetBooking->trnx_id                  = $booking_id;
-                $assetBooking->price                    = \number_format($price, 2, '.', ',');
+            $request->session()->flash('booking', $asset_data['message']);
 
-                try {
+            $route = null;
+            if ($requestObject->user_type_id === '1') 
+                $route = '/advertiser/corporate/transactions/pending/single';
+            else if ($requestObject->user_type_id === '2') 
+                $route = '/advertiser/individual/transactions/pending/single';
+            else 
+                $route = route('home');
+    
+    
+            return response()->json(['status' => true, 'errors' => null, 'success' => ['url' => $route, 'msg' => $asset_data['message']]]);
+        } 
 
-                    if ($assetBooking->save()) {
+        $data = $asset_data->getData();
 
-                        // $desc = 'Generating transaction of 10% for the asset with the reserved ref number: '. $booking_id;
-                        // $perc = 0.1;
-                        $x = new Carbon($grace_period_started);
-                        $grace_period_ends = $x->addHours(48);
-
-                        $sec_grace_prd_start_date = new Carbon($request->start_date);
-                        $sec_grace_prd_start = $sec_grace_prd_start_date->subDays(3);
-
-                        $sec_grace_prd_end_date = new Carbon($sec_grace_prd_start);
-                        $sec_grace_prd_end = $sec_grace_prd_end_date->addHours(48);
-
-                        $bulk_grace_records = [
-                            [
-                                'asset_booking_id' => $assetBooking->id,
-                                'booked_id' => $booking_id,
-                                'percentage' => '10%',
-                                'grace_period_started' => $grace_period_started,
-                                'grace_period_ends' => $grace_period_ends,
-                                'completed' => 0,
-                                'created_at' => Carbon::now(),
-                                'updated_at' => Carbon::now(),
-                            ],
-                            [
-                                'asset_booking_id' => $assetBooking->id,
-                                'booked_id' => $booking_id,
-                                'percentage' => '90%',
-                                'grace_period_started' => $sec_grace_prd_start,
-                                'grace_period_ends' => $sec_grace_prd_end,
-                                'completed' => 0,
-                                'created_at' => Carbon::now(),
-                                'updated_at' => Carbon::now(),
-                            ],
-
-                        ];
-
-                        $created = false;
-
-                        foreach ($bulk_grace_records as $key => $bulk_grace_record) {
-                            $created = AssetGracePeriod::create($bulk_grace_record);
-                        }
-
-                        // check if we are a corporate body and then save the token against the transaction used to authorize.
-                        // if ( $request->otp ) {
-                        //     $token = TransactionToken::where('token', '=', $request->otp)->first();
-                        //     if ($token) {
-                        //         $token->trnx_id = $booking_id;
-                        //         $token->save();
-                        //     }
-                        // }
-
-                        if ($created) {
-
-                            $statement = '<li class="fs-13">
-                                You have successfully booked this Asset.<br />
-                                However, you are required to make 10% payment deposit within 48hrs to validate your interest<br />
-                            </li>';
-
-                            $request->session()->flash('booking', $statement);
-                            $user = \Request::get('user');
-                            $route = null;
-
-                            if ($user->user_type_id === 2 && $user->operator === 0) $route = route('individaulPendingTransaction');
-                            else if ($user->user_type_id === 2 && $user->operator === 0) $route = route('corporatePendingTransaction');
-                            else $route = route('home');
+        return response()->json(['status' => false, 'errors' => $data->errors, 'success' => null]);
+    }
 
 
-                            return response()->json(['status' => true, 'errors' => null, 'success' => ['url' => $route, 'msg' => $statement]]);
-                        }
+    public function book_asset_campaign(Request $request) {
+        // 
+        
+        $booking_id = 'Ast/bk/' . date('Y') . '/' . $this->generate_transaction_id(5) . '/' . str_pad($request->booked_by_user_id, 4, '0', STR_PAD_LEFT);
+
+        $campaign_id = $request->campaign_id;
+
+        if (!$campaign_id) {
+            return redirect()->back()->with(['flash_error', 'No Campaign ID supplied.']);
+        }
+        
+        $campaign = Campaign::find($request->campaign_id);
+
+        if (!$campaign) {
+            return redirect()->back()->with(['flash_error', 'No Campaign found.']);
+        }
+
+        $all_requests = $request->all();
+        $booked_by_user_id = $request->booked_by_user_id;
+        $user_type_id = $request->user_type_id;
+        $start_date = $campaign->start_date;
+        $end_date = $campaign->end_date;
+
+        $successCnt = 0;
+        $failedCnt = 0;
+
+        $data_arr = [];
+
+        $type = env('CAMPAIGN_BOOKING_TYPE');
+
+        foreach($all_requests['aid'] as $key => $req) {
+
+            $requestObject = new \stdClass();
+            $requestObject->aid = $all_requests['aid'][$key];
+            $requestObject->price = $all_requests['price'][$key];
+            $requestObject->booked_by_user_id = $booked_by_user_id;
+            $requestObject->user_type_id = $user_type_id;
+            $requestObject->start_date = $start_date;
+            $requestObject->end_date = $end_date;
+            $requestObject->type = $type;
+            $requestObject->booking_id = $booking_id;
+
+            $asset_data = $this->book_asset($requestObject);
+
+            if ($asset_data && is_array($asset_data) && $asset_data['status']) {
+                $successCnt++;
+                $data_arr [] = $asset_data;
+            }
+            else if ($asset_data && is_object($asset_data)) {
+                $failedCnt++;
+                $data_arr [] = $asset_data;
+            }
+        }
+
+        // dd($request->all(), $successCnt, $failedCnt, $data_arr);
+
+        $route = null;
+        if ($user_type_id === '1') 
+            $route = '/advertiser/corporate/transactions/pending/campaign';
+        else if ($user_type_id === '2') 
+            $route = '/advertiser/individual/transactions/pending/campaign';
+        else 
+            $route = route('home');
+
+        if ($successCnt > 0 && $failedCnt === 0) {
+            return redirect($route)->with(['flash_success', 'Your '. $successCnt .' asset has been successfully booked and locked down for your campaign.']);
+        }
+        else if ($successCnt > 0 && $failedCnt > 0) {
+            return redirect($route)->with(['flash_warning', $successCnt . ' asset has been booked and locked down for your campaign but '. $failedCnt . ' failed the booking.']);
+        }
+        else if ($successCnt === 0 && $failedCnt > 0) {
+            return redirect($route)->with(['flash_error', 'Unable to book '. $failedCnt .' assets for your campaign.']);
+        }
+    }
+
+
+    public function book_asset(\stdClass $request)
+    {
+        $start_date                 = new Carbon($request->start_date);
+        $end_date                   = new Carbon($request->end_date);
+        $d                          = new Carbon($request->end_date);
+        $next_availability_date     = $d->addDay();
+        $aid                        = $request->aid;
+        $price                      = floatval(str_replace(',', '', $request->price));
+
+        $assetBooking = new AssetBooking;
+
+        $is_existing = $this->check_asset_existence($assetBooking, $aid, $start_date, $end_date);
+
+        if ($is_existing === false) {
+
+            $grace_period_started = Carbon::now();
+
+            $booking_id                             = $request->booking_id;
+            $assetBooking->start_date               = $start_date;
+            $assetBooking->end_date                 = $end_date;
+            $assetBooking->next_availability_date   = $next_availability_date;
+            $assetBooking->grace_period_started     = $grace_period_started;
+            $assetBooking->asset_id                 = $aid;
+            $assetBooking->locked                   = 1;
+            $assetBooking->booked_by_user_id        = $request->booked_by_user_id;
+            $assetBooking->user_type_id             = $request->user_type_id;
+            $assetBooking->type                     = $request->type;
+            $assetBooking->trnx_id                  = $booking_id;
+            $assetBooking->price                    = \number_format($price, 2, '.', ',');
+
+            try {
+
+                if ($assetBooking->save()) {
+
+                    // $desc = 'Generating transaction of 10% for the asset with the reserved ref number: '. $booking_id;
+                    // $perc = 0.1;
+                    $x = new Carbon($grace_period_started);
+                    $grace_period_ends = $x->addHours(48);
+
+                    $sec_grace_prd_start_date = new Carbon($request->start_date);
+                    $sec_grace_prd_start = $sec_grace_prd_start_date->subDays(3);
+
+                    $sec_grace_prd_end_date = new Carbon($sec_grace_prd_start);
+                    $sec_grace_prd_end = $sec_grace_prd_end_date->addHours(48);
+
+                    $bulk_grace_records = [
+                        [
+                            'asset_booking_id' => $assetBooking->id,
+                            'booked_id' => $booking_id,
+                            'percentage' => '10%',
+                            'grace_period_started' => $grace_period_started,
+                            'grace_period_ends' => $grace_period_ends,
+                            'completed' => 0,
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ],
+                        [
+                            'asset_booking_id' => $assetBooking->id,
+                            'booked_id' => $booking_id,
+                            'percentage' => '90%',
+                            'grace_period_started' => $sec_grace_prd_start,
+                            'grace_period_ends' => $sec_grace_prd_end,
+                            'completed' => 0,
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ],
+
+                    ];
+
+                    foreach ($bulk_grace_records as $key => $bulk_grace_record) {
+                        AssetGracePeriod::create($bulk_grace_record);
                     }
 
-                    return response()->json(['status' => false, 'errors' => '<li class="fs-13">Apologies, we are unable to complete the asset booking at the moment.<br />' .
-                        '<br>Please try again later</li>', 'success' => null]);
-                } catch (QueryException $qe) {
-                    $this->log('Critical', $qe->getMessage());
+                    // check if we are a corporate body and then save the token against the transaction used to authorize.
+                    // if ( $request->otp ) {
+                    //     $token = TransactionToken::where('token', '=', $request->otp)->first();
+                    //     if ($token) {
+                    //         $token->trnx_id = $booking_id;
+                    //         $token->save();
+                    //     }
+                    // }
+
+                    $message = '<li class="fs-13">
+                        You have successfully booked this Asset.<br />
+                        However, you are required to make 10% payment deposit within 48hrs to validate your interest<br />
+                    </li>';
+
+                    return [
+                        'status' => true,
+                        'message' => $message
+                    ];
                 }
-            } else return $is_existing;
+
+                $message = '<li class="fs-13">Apologies, we are unable to complete the asset booking at the moment.<br />' . 
+                    '<br>Please try again later</li>';
+
+                return [
+                    'status' => false,
+                    'message' => $message
+                ];
+
+            } catch (QueryException $qe) {
+                $this->log('Critical', $qe->getMessage());
+            }
+        } else {
+            return $is_existing;
         }
     }
 
@@ -435,7 +550,6 @@ class AssetController extends Controller
         $GRACEPRD = 48;
         $user = null;
         $asset_booking_records = AssetBooking::where('locked', '=', 1)->get();
-
         $this->releaseUnpaidBookedAsset($asset_booking_records, $GRACEPRD);
     }
 
