@@ -246,11 +246,20 @@
             vertical-align: middle;
         }
 
-        button {
+        button, .campaign-delete {
             color: #fff;
             background-color: #c40b0b;
             border: none;
             border-radius: 10px;
+        }
+
+        .campaign-delete {
+            padding: 2px 18px;
+            margin-right: 8px;
+        }
+
+        .campaign-delete:hover {
+            color: #fff;
         }
 
     </style>
@@ -300,6 +309,7 @@
                                                                     <h3>{{$campaigns->name}} ({{$campaigns->start_date}})</h3>
                                                                     @if ($campaigns->id)
                                                                         <a href="{{url('/advertiser/individual/create/campaign/'.$campaigns->id)}}" target="_blank" class="btn create-btn smaller">Add items to campaign cart<i class="fal fa-cart-plus"></i></a>
+                                                                        <a href="{{url('/advertiser/individual/remove/campaign/'.$campaigns->id)}}" class="campaign-delete"><i class="fal fa-times"></i></a>
                                                                     @endif
                                                                     <p class="clearfix"></p>
                                                                 </div>
@@ -315,10 +325,9 @@
                                                                                 <table class="pending-transactions-table">
                                                                                     <tbody>
                                                                                         @foreach($campaigns->campaignDetails as $idx => $campaignDetail)
-                                                                                            @if (in_array($campaignDetail->asset_id, $campaigns->booked_asset_id_arry)) <?php $is_asset_booked_class = " existed" ?> @endif
                                                                                             @if ($campaignDetail->assetDetails)
                                                                                                 <?php $grndtot+= $campaignDetail->assetDetails->max_price ?>
-                                                                                                <tr class="campaign-items{{$is_asset_booked_class}}">
+                                                                                                <tr class="campaign-items">
                                                                                                     <td class="fs-14 sm-fs-12 p-0">
                                                                                                         <div class="cimages">
                                                                                                             <!-- disk('local')-> -->
@@ -350,7 +359,7 @@
                                                                                                     </td>
                                                                                                     <td class="fs-14 sm-fs-12 p-0">{{$campaignDetail->assetDetails->payment_freq}}</td>
                                                                                                     <td class="fs-14 sm-fs-12 p-0">
-                                                                                                        <a href="{{url('/advertiser/individual/remove/campaign/'.$campaignDetail->id)}}" class="">Remove <i class="fal fa-times"></i></a>
+                                                                                                        <a href="{{url('/advertiser/individual/remove/campaign/booking/'.$campaignDetail->id)}}" class="">Remove <i class="fal fa-times"></i></a>
                                                                                                     </td>
                                                                                                 </tr>
                                                                                             @else 
@@ -380,12 +389,6 @@
                                                                 </div>
                                                             </div>
                                                         @endforeach
-                                                        @if($is_asset_booked_class)
-                                                            <p style="text-align: center; color:#d72828">
-                                                                If you notice a light red stripe around each of your added campaign asset, <br>
-                                                                it's because you or someone else must have added or book the asset before (active state).
-                                                            </p>
-                                                        @endif
                                                     @endif
                                                 </th>
                                             </tr>

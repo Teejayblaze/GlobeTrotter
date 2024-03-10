@@ -128,7 +128,7 @@
 
                                                 Would you rather start now?</p>
                                             <div class="mt-20 mb-10">
-                                                <a href="{{ url('/advertiser/individual/search/advanced') }}" class="theme-btn dashboard-search-btn"><span class="far fa-search"></span>Search</a>
+                                                <a href="{{ url('/advertiser/individual/create/campaign') }}" class="theme-btn dashboard-search-btn"><span class="far fa-search"></span>Search</a>
                                             </div>
                                         </div>
                                     </div>
