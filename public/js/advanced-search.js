@@ -462,13 +462,17 @@ $(document).ready(function(){
           title: 'Campaign Created',
           text: res.success.msg,
           type: 'success',
-        }).then(result => {
+        }).then(_ => {
+          const result = res.success.result || [];
           // update the campaign list
-          $('.campaign-lists .cbody').html(display_campaign_lists(res.success.result));
+          $('.campaign-lists .cbody').html(display_campaign_lists(result));
           $('.campaign-form').css('display', 'none');
           $('.campaign-overlay').removeClass('show-campaign-overlay');
           // $('.campaign-lists').css('display', 'block');
           $('.campaign-content .cbody ul li').addCampaignToCart();
+
+          const lastResult = result.length > 0 ? result[result.length - 1] : 0;
+          window.location.href = '/advertiser/individual/create/campaign/' + lastResult.id;
         });
       }).fail(err => {
         $('.campaign-loader').css('display', 'none');

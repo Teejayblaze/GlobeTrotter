@@ -113,7 +113,8 @@ Route::namespace('Advertiser')->prefix('advertiser')->group(function () {
         Route::get('/create/campaign/{campaign_id?}', 'IndividualDashboardController@create_campaign_view');
         Route::get('/view/campaign', 'IndividualDashboardController@campaign_view');
         Route::get('/replace/campaign/{old_asset_id?}/{new_asset_id?}', 'IndividualDashboardController@replace_campaign_view');
-        Route::get('/remove/campaign/{campaign_id?}', 'IndividualDashboardController@remove_campaign_view');
+        Route::get('/remove/campaign/booking/{campaign_id?}', 'IndividualDashboardController@remove_campaign_view');
+        Route::get('/remove/campaign/{campaign_id?}', 'IndividualDashboardController@remove_campaign');
 
         Route::get('/fast-track', 'IndividualDashboardController@fast_track');
         Route::get('/fast-track/exit', 'IndividualDashboardController@exit_fast_track');
