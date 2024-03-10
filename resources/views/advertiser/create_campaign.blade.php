@@ -798,7 +798,10 @@
                                                             <img src="{{ Storage::url($asset->assetImagesRecord[$rand]->image_path) }}" alt="Featured image">
                                                         </div>
                                                         <div class="listing-content">
-                                                            <h4 class="listing-title result-listing-title"><a href="{{ url('asset/'. $asset->id .'/detail') }}">{{ $asset->name }}</a></h4>
+                                                            <h4 class="listing-title result-listing-title">
+                                                                {{ $asset->name }}
+                                                                {{-- <a href="{{ url('asset/'. $asset->id .'/detail') }}">{{ asset->name }}</a> --}}
+                                                            </h4>
                                                             <p class="listing-sub-title mb-4 result-listing-address"><i class="far fa-location-dot"></i>{{ $asset->address }}</p>
                                                         </div>
                                                         <span class="check-correct"></span>

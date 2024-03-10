@@ -911,6 +911,24 @@ class IndividualDashboardController extends Controller
             }
         }
     }
+    
+    public function remove_campaign($campaign_id = 0)
+    {
+        $user = \Request::get('user');
+        if ($campaign_id > 0) {
+            if (Campaign::find($campaign_id)->delete()) {
+                try {
+                    $campaign_details = CampaignDetail::where('campaign_id', $campaign_id);
+                    if ($campaign_details->count()) {
+                        $campaign_details->delete();
+                    }
+                    return redirect()->back();
+                } catch(\Illuminate\Database\QueryException $qex) {
+                    $this->log('Critical', $qex->getMessage()); // Log the exception here.
+                }
+            }
+        }
+    }
 
 
     public function create_campaign(Request $request)

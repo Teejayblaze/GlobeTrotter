@@ -604,10 +604,8 @@
                     @endif
                     <div class="content">
                         <div class="law-context hide_print" style="padding: 5px; text-align: justify;">
-                            @if ($operator && $type === env('SINGLE_BOOKING_TYPE'))    
-                                <h2 class="fs-30 mb-10 mt-20 text-center">{{$operator->corporateName}}</h2>
-                                <p class="fs-15 mb-20 text-center">{{$operator->address}}</p>
-                            @endif
+                            <h2 class="fs-30 mb-10 mt-20 text-center">{{$userInfo->name}}</h2>
+                            <p class="fs-15 mb-20 text-center">{{$userInfo->address}}</p>
                             <h2 class="fs-15 mb-20 text-center">Media Purchase Order</h2>
                             <div class="mb-20">
                                 <table class="tbl">
@@ -624,8 +622,8 @@
                                 </table>
                             </div>
                             <div class="text-left mb-20">
-                                <p class="fs-13 mb-0">{{$userInfo->name}}</p>
-                                <p class="fs-13 mb-0">{{$userInfo->address}}</p>
+                                <p class="fs-13 mb-0">{{$operator && $operator->corporateName}}</p>
+                                <p class="fs-13 mb-0">{{$operator && $operator->address}}</p>
                             </div>
                             <table class="tablex">
                                 @if ($type === env('SINGLE_BOOKING_TYPE'))
@@ -723,6 +721,7 @@
                         <div class="payment-sched-printable-content" id="payment-sched-printable-content"></div>
                     </div>
                 </div>
+
                 <div class="modal-footer">
                     <div class="hide-defualt">
                         <a href="#" class="action-button btn btn-light hide_dismiss">Close <i class="fal fa-times"></i></a>
@@ -780,7 +779,7 @@
                                 </tr>
                                 @endif
                                 <tr>
-                                    <th class="fs-14">Balance Amount</th>
+                                    <th class="fs-14">Actual Amount</th>
                                     <td class="fs-14 text-right">
                                         @if ($type === env('SINGLE_BOOKING_TYPE'))
                                         <span id="bal_amt_read"></span>
@@ -790,7 +789,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th class="fs-14">Amount Payable (&#8358;)</th>
+                                    <th class="fs-14">Amount to be Paid (&#8358;)</th>
                                     <td class="fs-14 text-right">
                                         <span contenteditable="true"
                                         class="amt-payable-edit" focus="true"
