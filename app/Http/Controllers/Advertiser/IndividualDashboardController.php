@@ -37,15 +37,15 @@ class IndividualDashboardController extends Controller
 {
     //
     use TransactionTrait, UserProfileTrait, LoggerTrait, AssetTrait, GenericThirdPartyRequestTrait;
-    
+
     public function dashboard()
     {
         $title = "Dashboard";
-        
+
         $user = \Request::get('user');
 
         $pending_tranx_count = $this->get_pending_payment_transaction_count();
-        
+
         $paid_tranx_count = $this->get_paid_payment_transaction_count();
 
         $booked_asset_count = $this->get_booked_asset_count();
@@ -70,16 +70,15 @@ class IndividualDashboardController extends Controller
         $campaigns = [];
         if ($type === env('CAMPAIGN_BOOKING_TYPE')) {
             $campaigns = $this->get_campaign_transactions($user);
-        }
-        else {
-            $pending_tranx_recs = $this->get_transaction_receipt(0,0,$fields);
+        } else {
+            $pending_tranx_recs = $this->get_transaction_receipt(0, 0, $fields);
         }
         $title = "Pending Transactions";
         return view('advertiser.pendingtransaction', \compact('campaigns', 'pending_tranx_recs', 'user', 'title', 'type'));
     }
 
 
-    public function delete_pending_transactions(string $booking_id, string $booking_type = '', string $booking_type_id = '') 
+    public function delete_pending_transactions(string $booking_id, string $booking_type = '', string $booking_type_id = '')
     {
         if (!$booking_id) {
             return redirect()->back()->with(["flash_error" => "Booking reference was not provided."]);
@@ -105,8 +104,7 @@ class IndividualDashboardController extends Controller
         $campaign = null;
         if ($type === env('CAMPAIGN_BOOKING_TYPE')) {
             $campaign = $this->get_campaign_by_id($booking_id);
-        }
-        else {
+        } else {
             $asset_pending_recs = $this->get_transaction_receipt(0, $booking_id, $fields);
         }
 
@@ -120,10 +118,9 @@ class IndividualDashboardController extends Controller
                 $userInfo->address = $corporate->address;
                 $userInfo->phone = $corporate->phone;
                 $userInfo->email = $corporate->email;
-            }
-            else {
+            } else {
                 $individual = Individual::find($user->id);
-                $userInfo->name = $individual->lastname .' '. $individual->firstname;
+                $userInfo->name = $individual->lastname . ' ' . $individual->firstname;
                 $userInfo->address = $individual->address;
                 $userInfo->phone = $individual->phone;
                 $userInfo->email = $individual->email;
@@ -135,39 +132,38 @@ class IndividualDashboardController extends Controller
             $operatorId = $asset_pending_recs[0]->asset->uploaded_by;
             $operatorRec = $this->get_operator_by_id($operatorId);
             $operator->corporateName = $operatorRec->corporate_name;
-            $operator->address = $operatorRec->address?$operatorRec->address:$operatorRec->oaan_number .', '. $operatorRec->email .', '. $operatorRec->phone;
+            $operator->address = $operatorRec->address ? $operatorRec->address : $operatorRec->oaan_number . ', ' . $operatorRec->email . ', ' . $operatorRec->phone;
             $operator->designation = "CEO";
         }
 
         // dd($user, $userInfo, $operator, env('INDIVIDUAL_USER_TYPE'));
         $title = "Transaction Payment Details";
-        return view('advertiser.transactionpaymentsdetail', \compact('campaign', 'asset_pending_recs', 'user', 'title', 'userInfo', 'operator', 'type')); 
+        return view('advertiser.transactionpaymentsdetail', \compact('campaign', 'asset_pending_recs', 'user', 'title', 'userInfo', 'operator', 'type'));
     }
 
-    
+
     public function paid_transaction_payments_detail(int $booking_id = 0)
     {
         $user = \Request::get('user');
         $paid_tranx_recs = $this->get_transaction_receipt(1, $booking_id);
         $title = "Paid Transaction Details";
-        return view('advertiser.paidtransactionpaymentsdetail', \compact('paid_tranx_recs', 'user', 'title')); 
+        return view('advertiser.paidtransactionpaymentsdetail', \compact('paid_tranx_recs', 'user', 'title'));
     }
 
     public function payment_history()
     {
         $user = \Request::get('user');
         $asset_booking_recs = AssetBooking::where([
-            'booked_by_user_id' => $user->user_id, 
+            'booked_by_user_id' => $user->user_id,
             'user_type_id' => $user->user_type_id
         ])->get();
 
         $title = "Payment History";
 
-        foreach($asset_booking_recs as $key => &$asset_booking_rec) {
+        foreach ($asset_booking_recs as $key => &$asset_booking_rec) {
             $asset_booking_rec->transaction = Transaction::where(['asset_booking_id' => $asset_booking_rec->id])->get();
         }
         return view('advertiser.payment-history', \compact('asset_booking_recs', 'user', 'title'));
-
     }
 
     public function transaction_history()
@@ -182,7 +178,7 @@ class IndividualDashboardController extends Controller
     {
         $user = \Request::get('user');
         $asset_recs = AssetBooking::where([
-            ['booked_by_user_id', '=', $user->id], 
+            ['booked_by_user_id', '=', $user->id],
             ['user_type_id', '=', $user->user_type_id]
         ])->paginate(1);
         $title = "My Booked Assets";
@@ -197,12 +193,12 @@ class IndividualDashboardController extends Controller
         $title = "Edit Profile";
 
         $pending_tranx_count = $this->get_pending_payment_transaction_count();
-        
+
         $paid_tranx_count = $this->get_paid_payment_transaction_count();
 
         $booked_asset_count = $this->get_booked_asset_count();
 
-        return view('advertiser.editprofile', \compact('user', 'edit_user', 'pending_tranx_count', 'paid_tranx_count', 'booked_asset_count', 'title')); 
+        return view('advertiser.editprofile', \compact('user', 'edit_user', 'pending_tranx_count', 'paid_tranx_count', 'booked_asset_count', 'title'));
     }
 
     public function edit_corporate_profile_view()
@@ -212,14 +208,14 @@ class IndividualDashboardController extends Controller
         $edit_corp->corp_id = $user->corp_id;
 
         $pending_tranx_count = $this->get_pending_payment_transaction_count();
-        
+
         $paid_tranx_count = $this->get_paid_payment_transaction_count();
 
         $booked_asset_count = $this->get_booked_asset_count();
 
         $title = "Edit Corporate Profile";
 
-        return view('advertiser.editcompanyprofile', \compact('user', 'edit_corp', 'pending_tranx_count', 'paid_tranx_count', 'booked_asset_count', 'title')); 
+        return view('advertiser.editcompanyprofile', \compact('user', 'edit_corp', 'pending_tranx_count', 'paid_tranx_count', 'booked_asset_count', 'title'));
     }
 
     public function edit_profile(Request $request)
@@ -240,17 +236,17 @@ class IndividualDashboardController extends Controller
         $user_id = $request->user_id;
         $user_type_id = $request->user_type_id;
 
-        $user_cred = \App\UserCredential::where([['user_id', '=', $user_id],['user_type_id', '=', $user_type_id]])->first();
-        if ( $user_cred ) {
+        $user_cred = \App\UserCredential::where([['user_id', '=', $user_id], ['user_type_id', '=', $user_type_id]])->first();
+        if ($user_cred) {
 
-            if ( $user_cred->email !== $request->email ) {
+            if ($user_cred->email !== $request->email) {
                 $user_cred->email = $request->email;
                 $user_cred->save();
             }
 
             $individual = Individual::where('id', '=', $user_id)->first();
 
-            if ( $individual ) {
+            if ($individual) {
 
                 $individual->firstname = $request->firstname;
                 $individual->lastname = $request->lastname;
@@ -258,14 +254,13 @@ class IndividualDashboardController extends Controller
                 $individual->phone = $request->phone;
                 $individual->address = $request->address;
                 try {
-                    if ( $individual->save() ) {
+                    if ($individual->save()) {
                         // $this->set_user_profile();
                         return redirect()->back()->with('edit-success', 'Successfully modified your profile record.');
-                    }
-                    else {
+                    } else {
                         return redirect()->back()->withErrors(['errors' => ['Apologies, unable to modify your profile at the moment.']]);
                     }
-                } catch(\Illuminate\Database\QueryException $qex) {
+                } catch (\Illuminate\Database\QueryException $qex) {
                     $this->log('Critical', $qex->getMessage()); // Log the exception here.
                 }
             }
@@ -290,22 +285,21 @@ class IndividualDashboardController extends Controller
 
         $corporate_user = Corporate::where('id', '=', $request->corp_id)->first();
 
-        if ( $corporate_user ) {
+        if ($corporate_user) {
             $corporate_user->name  = $request->name;
             $corporate_user->website = $request->website;
             $corporate_user->rc_number = $request->rc_number;
             $corporate_user->address = $request->address;
             $corporate_user->phone = $request->phone;
             $corporate_user->email = $request->email;
-            
+
             try {
-                if ( $corporate_user->save() ) {
+                if ($corporate_user->save()) {
                     return redirect()->back()->with('corporate-edit-success', 'Successfully modified your profile record.');
-                }
-                else {
+                } else {
                     return redirect()->back()->withErrors(['errors' => ['Apologies, unable to modify your profile at the moment.']]);
                 }
-            } catch(\Illuminate\Database\QueryException $qex) {
+            } catch (\Illuminate\Database\QueryException $qex) {
                 $this->log('Critical', $qex->getMessage()); // Log the exception here.
             }
         }
@@ -318,17 +312,17 @@ class IndividualDashboardController extends Controller
         $title = "Change Password";
 
         $pending_tranx_count = $this->get_pending_payment_transaction_count();
-        
+
         $paid_tranx_count = $this->get_paid_payment_transaction_count();
 
         $booked_asset_count = $this->get_booked_asset_count();
 
-        return view('advertiser.changepassword', \compact('user', 'pending_tranx_count', 'paid_tranx_count', 'booked_asset_count', 'title')); 
+        return view('advertiser.changepassword', \compact('user', 'pending_tranx_count', 'paid_tranx_count', 'booked_asset_count', 'title'));
     }
 
     public function change_password(Request $request)
     {
-        
+
         $validator = Validator::make($request->all(), [
             'previous_password' => 'bail|required',
             'new_password' => 'bail|required|confirmed',
@@ -348,17 +342,16 @@ class IndividualDashboardController extends Controller
             ['user_type_id', '=', $user_type_id],
         ])->first();
 
-        if ( Hash::check($previous_password, $user_cred->password) ) {
+        if (Hash::check($previous_password, $user_cred->password)) {
 
             $user_cred->password = bcrypt($new_password);
             try {
-                if ( $user_cred->save() ) {
+                if ($user_cred->save()) {
                     return redirect()->back()->with('edit-success', 'Successfully modified your password.');
-                }
-                else {
+                } else {
                     return redirect()->back()->withErrors(['errors' => ['Apologies, unable to modify your password at the moment.']]);
                 }
-            } catch(\Illuminate\Database\QueryException $qex) {
+            } catch (\Illuminate\Database\QueryException $qex) {
                 $this->log('Critical', $qex->getMessage()); // Log the exception here.
             }
         }
@@ -379,7 +372,7 @@ class IndividualDashboardController extends Controller
         $check10perc = true;
         foreach ($asset_bookings as $key => $asset_booking) {
             $trans_with_10_perc = $this->get_paid_receipts($asset_booking, $check10perc)->first();
-            if(!$trans_with_10_perc) {
+            if (!$trans_with_10_perc) {
                 unset($asset_bookings[$key]);
             }
         }
@@ -421,12 +414,12 @@ class IndividualDashboardController extends Controller
             if ($request->hasFile('asset_medias')) {
                 $uids = [];
                 $asset_medias = $request->file('asset_medias');
-                foreach($asset_medias as $key => $asset_media) {
+                foreach ($asset_medias as $key => $asset_media) {
                     $uid = Storage::putFile('public/materials', $asset_media);
                     array_push($uids, $uid);
                 }
 
-                if(count($uids)) {
+                if (count($uids)) {
 
                     $material = MaterialUpload::where([
                         'asset_booking_id' => $booking_id,
@@ -435,19 +428,17 @@ class IndividualDashboardController extends Controller
                         'user_type_id' => $user->user_type_id
                     ])->first();
 
-                    if($material) {
+                    if ($material) {
                         $material->upload_name = $request->upload_name;
 
-                        if($material->media) {
+                        if ($material->media) {
                             $material->media = $material->media . ',' . implode(',', $uids);
-                        }
-                        else {
+                        } else {
                             $material->media = implode(',', $uids);
                         }
 
                         $material->save();
-                    }
-                    else {
+                    } else {
 
                         $material = new MaterialUpload;
                         $material->asset_booking_id = $booking_id;
@@ -460,13 +451,11 @@ class IndividualDashboardController extends Controller
                     }
 
                     return redirect()->back()->with('upload-material-success', 'Successfully uploaded advert materials to the asset owner.');
-                }
-                else {
+                } else {
                     return redirect()->back()->withErrors(['errors' => ["Apologies, we couldn't find the file(s) to be uploaded."]]);
                 }
             }
-        }
-        catch(\Exception $e) {
+        } catch (\Exception $e) {
             return redirect()->back()->withErrors(['errors' => ["Apologies, we unable to upload your file(s)."]]);
         }
     }
@@ -477,15 +466,15 @@ class IndividualDashboardController extends Controller
         $asset_types = AssetType::all();
         $operators = Operator::orderBy('corporate_name', 'ASC')->get();
         $title = "Search";
-        return view('advertiser.advancesearch', \compact('user', 'asset_types', "title", "operators")); 
+        return view('advertiser.advancesearch', \compact('user', 'asset_types', "title", "operators"));
     }
 
     public function advanced_search_result_view(Request $request)
     {
         $user = \Request::get('user');
         $asset_types = AssetType::all();
-        
-       
+
+
         $search = $this->search_asset($request, null);
         $title = "Search Result";
         return view('advertiser.advancesearchresult', \compact('user', 'asset_types', 'title'))->with($search);
@@ -531,7 +520,7 @@ class IndividualDashboardController extends Controller
         $latitude = $longitude = 0;
         $searchTerm = "";
         $apiKey = env("GOOGLE_MAP_API_KEY");
-        
+
         \DB::enableQueryLog();
 
         $where_builder = [];
@@ -545,14 +534,14 @@ class IndividualDashboardController extends Controller
         $raw_assets = \App\Asset::query();
 
 
-        if(isset($search_criteria[1]) && $request->asset_owner) {
+        if (isset($search_criteria[1]) && $request->asset_owner) {
             $asset_owner = $request->asset_owner;
             $raw_assets->where(['uploaded_by' => $asset_owner]);
         }
 
         if ($site_catgory && count($site_catgory)) $raw_assets->whereIn('asset_type', $site_catgory);
 
-        if(isset($search_criteria[3])) {
+        if (isset($search_criteria[3])) {
             if ($asset_location_state)  $raw_assets->where([['location_state', '=', $asset_location_state]]);
             if ($asset_location_lga) $raw_assets->where([['location_lga', '=', $asset_location_lga]]);
 
@@ -564,7 +553,7 @@ class IndividualDashboardController extends Controller
 
         $filterByLocation = false;
 
-        if(isset($search_criteria[4]) && isset($request->asset_location_search)) {
+        if (isset($search_criteria[4]) && isset($request->asset_location_search)) {
             $filterByLocation = true;
             $searchTerm = $request->asset_location_search;
         }
@@ -576,14 +565,14 @@ class IndividualDashboardController extends Controller
         //     $raw_assets->orWhere([['asset_dimension_height', '<=', $dimension_height]]);
         // }
 
-        if($site_board_type && count($site_board_type)) {
-           $raw_assets->whereIn('asset_category', $site_board_type);
+        if ($site_board_type && count($site_board_type)) {
+            $raw_assets->whereIn('asset_category', $site_board_type);
         }
 
 
         if (count($where_builder)) {
-            $raw_assets->where(function($query) use ($where_builder) {
-                foreach($where_builder as $where) {
+            $raw_assets->where(function ($query) use ($where_builder) {
+                foreach ($where_builder as $where) {
                     $query->where([$where]);
                 }
             });
@@ -591,7 +580,7 @@ class IndividualDashboardController extends Controller
 
         if ($keywords) {
             $start = 10000;
-            if($start) $raw_assets->whereBetween('max_price', [$start, $max_price]);
+            if ($start) $raw_assets->whereBetween('max_price', [$start, $max_price]);
         }
 
         $assets = $raw_assets->orderBy('asset_type', 'DESC')->get();
@@ -620,20 +609,19 @@ class IndividualDashboardController extends Controller
         $asset_types_categories = [];
 
         if ($filterByState) {
-            $state_name = State::find($asset_location_state)->state_name??"";
-            $lga_name = LGA::where(['id' => $asset_location_lga, 'state_id' => $asset_location_state])->first()->lga_name??"";
+            $state_name = State::find($asset_location_state)->state_name ?? "";
+            $lga_name = LGA::where(['id' => $asset_location_lga, 'state_id' => $asset_location_state])->first()->lga_name ?? "";
 
             if ($state_name) {
                 $searchTerm = $state_name;
             }
 
             if ($lga_name) {
-                $searchTerm .= ','. $lga_name;
+                $searchTerm .= ',' . $lga_name;
             }
         }
 
-        if ($filterByState || $filterByLocation)
-        {
+        if ($filterByState || $filterByLocation) {
 
             $endpoint = env("GOOGLE_MAP_API") . "/geocode/json?address=" . urlencode($searchTerm) . "&key=" . urlencode($apiKey);
 
@@ -644,12 +632,10 @@ class IndividualDashboardController extends Controller
                     $longitude = floatval(trim($data['results'][0]['geometry']['location']['lat']));
                     // $latitude = floatval(trim($data['results'][0]['geometry']['location']['lat']));
                     // $longitude = floatval(trim($data['results'][0]['geometry']['location']['lng']));
-                }
-                else {
+                } else {
                     $filterByState = $filterByLocation = false;
                 }
-            }
-            else {
+            } else {
                 $filterByState = $filterByLocation = false;
             }
         }
@@ -668,7 +654,7 @@ class IndividualDashboardController extends Controller
                     $asset->type = $asset->assetTypeRecord->type;
                     $asset->images = $asset->assetImagesRecord;
 
-                    $asset->ajax_images = array_map(function($imagesObj) use ($extract){
+                    $asset->ajax_images = array_map(function ($imagesObj) use ($extract) {
                         return $extract . \Storage::url($imagesObj['image_path']);
                     }, $asset->assetImagesRecord->toArray());
 
@@ -676,21 +662,19 @@ class IndividualDashboardController extends Controller
 
                     $asset->owner = $asset->assetOwner->corporate_name;
 
-                    $key = strtolower($asset->asset_category) ."-". strtolower($asset->type);
+                    $key = strtolower($asset->asset_category) . "-" . strtolower($asset->type);
                     $asset_types_categories[$key] = $asset->type;
 
                     if (!isset($asset_category_count[$key])) $asset_category_count[$key] = 1;
                     else $asset_category_count[$key] += 1;
-                }
-                else {
+                } else {
                     unset($assets[$assetKey]);
                 }
-            }
-            else {
+            } else {
                 $asset->type = $asset->assetTypeRecord->type;
                 $asset->images = $asset->assetImagesRecord;
 
-                $asset->ajax_images = array_map(function($imagesObj) use ($extract){
+                $asset->ajax_images = array_map(function ($imagesObj) use ($extract) {
                     return $extract . \Storage::url($imagesObj['image_path']);
                 }, $asset->assetImagesRecord->toArray());
 
@@ -698,7 +682,7 @@ class IndividualDashboardController extends Controller
 
                 $asset->owner = $asset->assetOwner->corporate_name;
 
-                $key = strtolower($asset->asset_category) ."-". strtolower($asset->type);
+                $key = strtolower($asset->asset_category) . "-" . strtolower($asset->type);
                 $asset_types_categories[$key] = $asset->type;
 
                 if (!isset($asset_category_count[$key])) $asset_category_count[$key] = 1;
@@ -721,21 +705,20 @@ class IndividualDashboardController extends Controller
     public function generate_nibbs_transaction_code(Request $request)
     {
         $user =  $user = \Request::get('user');
-        if($user) {
-            if(($code = $this->generate_otp($user, $request->txref, $request->tid)) && $code != null) {
+        if ($user) {
+            if (($code = $this->generate_otp($user, $request->txref, $request->tid)) && $code != null) {
                 return redirect()->back()->with(['otp-success' => 'Successfully Generated One Time Token.', 'code' => $code])->withInput();
             }
             return redirect()->back()->with(['otp-failed' => 'Apologies, unable to generate  One Time Token at the moment.'])->withInput();
-        }
-        else {
+        } else {
             return redirect()->back()->with(['otp-failed' => 'Apologies, unable to generate  One Time Token at the moment.'])->withInput();
         }
     }
 
-    private function get_transaction_tokens( int $corp_id )
+    private function get_transaction_tokens(int $corp_id)
     {
         $tokens = TransactionToken::where('corp_id', '=', $corp_id)->orderBy('status', 'desc')->get();
-        if ( count($tokens) ) {
+        if (count($tokens)) {
             foreach ($tokens as $key => $token) {
 
                 $user = $this->get_user_details($token->used_by, $token->corp_id);
@@ -746,10 +729,10 @@ class IndividualDashboardController extends Controller
                 $corporate_name = 'None Yet';
                 $token_created_by = 'Unknown';
 
-                if ($user) $usedby_name = $user->lastname .' '. $user->firstname;
+                if ($user) $usedby_name = $user->lastname . ' ' . $user->firstname;
                 if ($corporate) $corporate_name = $corporate->name;
                 if (!$token->trnx_id) $token->trnx_id = 'None Yet';
-                if ($logged_user) $token_created_by = $logged_user->lastname .' '. $logged_user->firstname;
+                if ($logged_user) $token_created_by = $logged_user->lastname . ' ' . $logged_user->firstname;
 
                 $token->usedby_name = $usedby_name;
                 $token->auth_by = $token_created_by;
@@ -766,7 +749,7 @@ class IndividualDashboardController extends Controller
         $user = \Request::get('user');
         $assets = $this->getAvailableAsset();
         $asset_types = AssetType::all();
-        
+
         $campaigns_found = null;
 
         if ($campaign_id) {
@@ -786,7 +769,7 @@ class IndividualDashboardController extends Controller
                 }
             }
         }
-        
+
         return view('advertiser.create_campaign', compact('user', 'assets', 'asset_types', 'campaigns_found', 'campaign_id'));
     }
 
@@ -803,16 +786,16 @@ class IndividualDashboardController extends Controller
              * Extract the necessary features needed to 
              * determine which advert has been booked by another user thus in these campaign.
              * 
-             */                
+             */
             $campaign_details_found_asset_id_arry = array_column($campaign_details_found_arry, 'asset_id');
             $campaign_details_found_id_arry = array_column($campaign_details_found_arry, 'id');
             $campaign_asset_exist = AssetBooking::whereIn('asset_id', $campaign_details_found_asset_id_arry)->get();
             $campaign_asset_exist_arry = $campaign_asset_exist->toArray();
-            $campaign_asset_exist_asset_id_arry = array_column($campaign_asset_exist_arry, 'asset_id'); 
+            $campaign_asset_exist_asset_id_arry = array_column($campaign_asset_exist_arry, 'asset_id');
 
 
             // Filter by the asset_id so we could know which asset is booked and which is not.
-            $asset_id_intercept = array_filter($campaign_details_found_asset_id_arry, function($value) use ($campaign_asset_exist_asset_id_arry){
+            $asset_id_intercept = array_filter($campaign_details_found_asset_id_arry, function ($value) use ($campaign_asset_exist_asset_id_arry) {
                 return in_array($value, $campaign_asset_exist_asset_id_arry);
             });
 
@@ -890,7 +873,7 @@ class IndividualDashboardController extends Controller
                 if ($campaign_det->save()) {
                     return redirect()->back();
                 }
-            } catch(\Illuminate\Database\QueryException $qex) {
+            } catch (\Illuminate\Database\QueryException $qex) {
                 $this->log('Critical', $qex->getMessage()); // Log the exception here.
             }
         }
@@ -906,12 +889,12 @@ class IndividualDashboardController extends Controller
                 if ($campaign_det->delete()) {
                     return redirect()->back();
                 }
-            } catch(\Illuminate\Database\QueryException $qex) {
+            } catch (\Illuminate\Database\QueryException $qex) {
                 $this->log('Critical', $qex->getMessage()); // Log the exception here.
             }
         }
     }
-    
+
     public function remove_campaign($campaign_id = 0)
     {
         $user = \Request::get('user');
@@ -923,7 +906,7 @@ class IndividualDashboardController extends Controller
                         $campaign_details->delete();
                     }
                     return redirect()->back();
-                } catch(\Illuminate\Database\QueryException $qex) {
+                } catch (\Illuminate\Database\QueryException $qex) {
                     $this->log('Critical', $qex->getMessage()); // Log the exception here.
                 }
             }
@@ -966,16 +949,17 @@ class IndividualDashboardController extends Controller
                         $campaign->end_date = date('F jS Y', strtotime($campaign->end_date));
                     }
                 }
-                return response()->json(['status' => true, 'errors' => null, 'success' => [
-                    'msg' => 'Congratulation! You have just created a campaign.',
-                    'result' => $campaigns_found,
+                return response()->json([
+                    'status' => true, 'errors' => null, 'success' => [
+                        'msg' => 'Congratulation! You have just created a campaign.',
+                        'result' => $campaigns_found,
                     ],
                 ]);
             }
-        } catch(\Illuminate\Database\QueryException $qex) {
+        } catch (\Illuminate\Database\QueryException $qex) {
             $this->log('Critical', $qex->getMessage()); // Log the exception here.
         }
-        
+
         // ALTER TABLE `campaigns` ADD `end_date` DATE NOT NULL AFTER `start_date`;
     }
 
@@ -987,7 +971,7 @@ class IndividualDashboardController extends Controller
         $success_msg = '';
         $success_push = [];
         foreach ($campaigns as $key => $campaign) {
-            $found = CampaignDetail::where([['campaign_id', '=', $campaign['campaign_id']],['asset_id', '=', $campaign['item_id']]])->count();
+            $found = CampaignDetail::where([['campaign_id', '=', $campaign['campaign_id']], ['asset_id', '=', $campaign['item_id']]])->count();
             if (!$found) {
                 CampaignDetail::create([
                     'campaign_id' => $campaign['campaign_id'],
@@ -1011,9 +995,9 @@ class IndividualDashboardController extends Controller
 
         if ($counter) {
             $msg_ext = $counter > 1 ? 'sites have been' : 'site has been';
-            $success_msg = '('. $counter . ') '. $msg_ext .' added to your campaign cart';
+            $success_msg = '(' . $counter . ') ' . $msg_ext . ' added to your campaign cart';
             $smt = $exist_cnt > 1 ? 'they' : 'it';
-            $success_msg .=  $exist_cnt ? ', while ('. $exist_cnt .') failed to add because '. $smt .' already exist.' : '.'; 
+            $success_msg .=  $exist_cnt ? ', while (' . $exist_cnt . ') failed to add because ' . $smt . ' already exist.' : '.';
             return response()->json(['status' => true, 'errors' => null, 'success' => [
                 'msg' => $success_msg,
                 'result' => $success_push
@@ -1040,13 +1024,13 @@ class IndividualDashboardController extends Controller
         $fast_track = new FastTrack();
         $fast_track->user_id = $user->user_id;
         $fast_track->user_type_id = $user->user_type_id;
-        
+
         try {
             if ($fast_track->save()) {
                 session()->put('fast-track-mode', true);
                 return redirect('advertiser/individual/dashboard');
             }
-        } catch(\Illuminate\Database\QueryException $qex) {
+        } catch (\Illuminate\Database\QueryException $qex) {
             $this->log('Critical', $qex->getMessage()); // Log the exception here.
         }
     }
@@ -1054,13 +1038,12 @@ class IndividualDashboardController extends Controller
     public function exit_fast_track()
     {
         $user = \Request::get('user');
-        $fast_track = FastTrack::where([['user_id', '=', $user->user_id],['user_type_id', '=', $user->user_type_id]]);
+        $fast_track = FastTrack::where([['user_id', '=', $user->user_id], ['user_type_id', '=', $user->user_type_id]]);
         if (count($fast_track->get())) {
             $fast_track->delete();
             session()->forget('fast-track-mode');
             return redirect()->back();
         }
-        
     }
 
 
@@ -1099,11 +1082,11 @@ class IndividualDashboardController extends Controller
         $bookings = $this->get_corporate_bookings($user->corp_id);
         $pending_tranx_recs = [];
         $booked_by_user = [];
-        
+
         if (count($bookings['corporate_bookings'])) {
             $pending_tranx_recs = $bookings['corporate_bookings'];
             $staff_details = $bookings['staff_details'];
-            $booked_by_user = array_filter($staff_details, function($el) use ($user_id){
+            $booked_by_user = array_filter($staff_details, function ($el) use ($user_id) {
                 return $user_id === $el[0];
             });
             $booked_by_user = array_shift($booked_by_user);
@@ -1116,7 +1099,7 @@ class IndividualDashboardController extends Controller
     {
         $user = \Request::get('user');
         $staffs = $this->get_corporate_staffs($user->corp_id);
-        return view('advertiser.corporate_staffs', compact('user', 'staffs'));   
+        return view('advertiser.corporate_staffs', compact('user', 'staffs'));
     }
 
 
@@ -1126,14 +1109,14 @@ class IndividualDashboardController extends Controller
         $staff = $this->get_corporate_staff_booking_records($user->corp_id, $staff_id);
         $staff_details = $staff['staff_details'];
         $booking_details = $staff['booking_details'];
-        return view('advertiser.corporate_single_staff', compact('user', 'staff_details', 'booking_details')); 
+        return view('advertiser.corporate_single_staff', compact('user', 'staff_details', 'booking_details'));
     }
 
 
     public function regenerateTransactionReference(string $booking_id, string $tranx_id)
     {
-        if($tranx_ref = $this->regenerate_transaction_id($booking_id)) {
-            if($this->update_transaction(['id' => $tranx_id], ['tranx_id' => $tranx_ref])) {
+        if ($tranx_ref = $this->regenerate_transaction_id($booking_id)) {
+            if ($this->update_transaction(['id' => $tranx_id], ['tranx_id' => $tranx_ref])) {
                 return redirect()->back()->with(["flash_message" => "Regenerated merchant transaction reference."]);
             }
         }
