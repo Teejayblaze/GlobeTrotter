@@ -1,0 +1,27 @@
+name: Deploy Globetrotter changes to cPanel
+
+on:
+  push:
+    branches:
+      - starter  # Change this to your branch name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install cPanel deployment script dependencies
+      run: |
+        npm install -g ftp-deploy
+
+    - name: Deploy to cPanel
+      run: |
+        ftp-deploy 
+          --local-dir=GlobeTrotter 
+          --remote-dir=GlobeTrotter 
+          --server=${{ FTP_SERVER }} 
+          --user=${{ FTP_USERNAME }}  
+          --password=${{ FTP_PASSWORD }} 
