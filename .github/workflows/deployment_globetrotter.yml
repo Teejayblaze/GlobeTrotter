@@ -22,6 +22,6 @@ jobs:
         ftp-deploy 
           --local-dir=GlobeTrotter 
           --remote-dir=GlobeTrotter 
-          --server=${{ FTP_SERVER }} 
-          --user=${{ FTP_USERNAME }}  
-          --password=${{ FTP_PASSWORD }} 
+          --server=${{ secrets.FTP_SERVER }} 
+          --user=${{ secrets.FTP_USERNAME }}  
+          --password=${{ secrets.FTP_PASSWORD }} 
