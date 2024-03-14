@@ -3,29 +3,22 @@ name: Deploy Globetrotter changes to cPanel
 on:
   push:
     branches:
-      - starter  # Change this to your branch name
+      - starter
+      - main
 
 jobs:
   deploy:
+    name: FTP deploy
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Install Node.js and npm
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
-        
-    - name: Install cPanel deployment script dependencies
-      run: npm install -g ftp-deploy
-
-    - name: Deploy to cPanel
-      run: |
-        ftp-deploy 
-          --local-dir GlobeTrotter 
-          --remote-dir GlobeTrotter 
-          --server ${{ secrets.FTP_SERVER }} 
-          --user ${{ secrets.FTP_USERNAME }}  
-          --password ${{ secrets.FTP_PASSWORD }} 
+    - uses: actions/checkout@master
+    - name: FTP-Deploy-Action
+      uses: SamKirkland/FTP-Deploy-Action@master
+      env:
+        FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+        FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        LOCAL_DIR: src
+        REMOTE_DIR: staging
+        ARGS: --delete --verbose
