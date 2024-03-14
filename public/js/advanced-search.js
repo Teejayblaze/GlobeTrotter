@@ -546,6 +546,7 @@ $(document).ready(function(){
     return records.map(layout);
   }
 
+  // setThousandSeparator function 
   function setThousandSeparator (num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
