@@ -19,6 +19,6 @@ jobs:
         FTP_SERVER: ${{ secrets.FTP_SERVER }}
         FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
         FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-        LOCAL_DIR: src
-        REMOTE_DIR: staging
+        LOCAL_DIR: globeTrotter
+        REMOTE_DIR: starter
         ARGS: --delete --verbose
