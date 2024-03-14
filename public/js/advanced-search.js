@@ -361,8 +361,6 @@ $(document).ready(function(){
 
   $('.add-to-campaign').openCampaignDialog();
 
-  // $('.create-campaign').on('click', function() {$('.campaign-form').css('display', 'block');});
-
   if ($('#campaign_date').length) {
     let today = new Date();
     $('#campaign_date').daterangepicker({
