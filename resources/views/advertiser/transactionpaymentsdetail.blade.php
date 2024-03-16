@@ -633,7 +633,7 @@
                                             <tr>
                                                 <th>S/no.</th>
                                                 <th>Location</th>
-                                                <th width="50%">Address</th>
+                                                <th width="30%">Address</th>
                                                 <th>Board Type</th>
                                                 <th>Duration</th>
                                                 <th>Amount</th>
@@ -698,7 +698,7 @@
                                     <thead>
                                         <tr>
                                             <th>
-                                                <p class="fs-13 mb-0">For: {{$userInfo->name}}</p>
+                                                <p class="fs-13 mb-0">Issuer: {{$userInfo->name}}</p>
                                                 <p class="fs-13 mb-0">Name: {{$userInfo->name}}</p>
                                                 <p class="fs-13 mb-0">Designation: {{$userInfo->designation}}</p>
                                                 <p class="fs-13 mb-0">Date: {{date('Y-m-d')}}</p>
@@ -706,7 +706,7 @@
                                             </th>
                                             @if ($operator && $type === env('SINGLE_BOOKING_TYPE'))    
                                             <th class="text-right">
-                                                <p class="fs-13 mb-0 text-right">From: {{$operator->corporateName}}</p>
+                                                <p class="fs-13 mb-0 text-right">To: {{$operator->corporateName}}</p>
                                                 <p class="fs-13 mb-0 text-right">Name:{{$operator->corporateName}}</p>
                                                 <p class="fs-13 mb-0 text-right">Designation: {{$operator->designation}}</p>
                                                 <p class="fs-13 mb-0 text-right">Date: {{date('Y-m-d')}}</p>

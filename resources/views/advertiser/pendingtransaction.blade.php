@@ -61,7 +61,8 @@
                                                             {{-- <span class="wow flash" data-wow-duration="2.5s" data-wow-iteration="infinite">{{$pending_tranx_rec->payment_remaining_perc . '% Payment Required'}}</span> --}}
                                                         </a>
                                                         @if ($pending_tranx_rec->payment_total === 0)
-                                                            <?php $redirectURL = str_replace("/", "-", $pending_tranx_rec->id); ?>
+                                                            <?php $id = str_replace("/", "-", $pending_tranx_rec->id); ?>
+                                                            <?php $redirectURL = $id . "/single/" . (0); ?>
                                                             <a href="javascript://" data-intended-url="{{url('/advertiser/individual/transactions/pending/'.$redirectURL.'/delete/')}}" class="delete-booking">&times; Delete</a>
                                                         @endif
                                                     </td>
