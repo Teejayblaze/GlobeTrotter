@@ -515,15 +515,15 @@
         </div>
 
         <div class="campaign-content campaign-form">
-            <div class="cheader">Campaign Form</div>
+            <div class="cheader">Multiple Booking Form</div>
             <div class="cbody">
                 <div class="custom-form">
                     <div class="login-form login-form-two">
                         <div class="row">
                             <div class="col-sm-12">
                                 <div class="form-group">
-                                    <label>Campaign Name</label>
-                                    <input type="text" placeholder="Your campaign name" class="form-control" name="campaign_name" id="campaign_name" value="" class="required">                                                  
+                                    <label>Multiple Bookings Name</label>
+                                    <input type="text" placeholder="Your multiple bookings name" class="form-control" name="campaign_name" id="campaign_name" value="" class="required">                                                  
                                     <i class="fal fa-road"></i> 
                                 </div>
                             </div>
@@ -531,8 +531,8 @@
                         <div class="row">
                             <div class="col-sm-12">
                                 <div class="form-group">
-                                    <label>Campaign Start Date</label>
-                                    <input type="text" placeholder="Your campaign date" class="form-control" name="campaign_date" id="campaign_date" autocomplete="off" value="" class="required">                                                  
+                                    <label>Multiple Booking Start Date</label>
+                                    <input type="text" placeholder="Your multiple bookings date" class="form-control" name="campaign_date" id="campaign_date" autocomplete="off" value="" class="required">                                                  
                                     <i class="fal fa-calendar"></i> 
                                 </div>
                             </div>
@@ -547,7 +547,7 @@
                     <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
                     sending your request, please wait...
                 </div>
-            <div class="cfooter"> <a href="javascript://" class="theme-btn custom-btn save-campaign">Save Campaign<i class="fal fa-save"></i></a></div>
+            <div class="cfooter"> <a href="javascript://" class="theme-btn custom-btn save-campaign">Save Multiple Booking<i class="fal fa-save"></i></a></div>
         </div>
 
         <div class="campaign-content campaign-result-loader">
@@ -558,11 +558,11 @@
 
     <div class="site-breadcrumb login-breadcrumb dashboard-breadcrumb">
         <div class="container">
-            <h2 class="breadcrumb-title dashboard-breadcrumb-menu-left">Campaign Cart</h2>
+            <h2 class="breadcrumb-title dashboard-breadcrumb-menu-left">Multiple Booking Cart</h2>
             <ul class="breadcrumb-menu dashboard-breadcrumb-menu-left">
                 <li><a href="{{ url('/advertiser/individual/dashboard') }}">Dashboard</a></li>
-                <li>Campaigns</li>
-                <li class="active-nav-dashboard">Campaign Cart</li>
+                <li>Multiple Bookings</li>
+                <li class="active-nav-dashboard">Multiple Booking Cart</li>
             </ul>
         </div>
     </div>
