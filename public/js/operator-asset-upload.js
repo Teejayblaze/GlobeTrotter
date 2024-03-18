@@ -38,6 +38,7 @@ $(document).ready(function(){
 
     if ($('.asset_dimension').length) {
         addRangeSlider($('.asset_dimension'), function(el){
+            console.log(el.from + ";" + el.to, el.input)
             el.input.value = el.from + ";" + el.to
         });
     }
