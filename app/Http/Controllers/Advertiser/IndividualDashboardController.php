@@ -130,7 +130,7 @@ class IndividualDashboardController extends Controller
         }
 
         // dd($user);
-        // $user->userInfo = $userInfo;
+        $user->userInfo = $userInfo;
 
         if (count($asset_pending_recs)) {
             $operatorId = $asset_pending_recs[0]->asset->uploaded_by;
