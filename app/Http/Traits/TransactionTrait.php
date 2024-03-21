@@ -136,7 +136,7 @@ trait TransactionTrait
                 $campaign->total_payment = $this->get_total_payment_amount($payment_records->toArray());
             }   
         }
-
+        
         return $campaigns;
     }
 

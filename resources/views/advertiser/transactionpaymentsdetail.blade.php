@@ -112,6 +112,49 @@
         list-style-type:decimal !important;
         color: #000;
     }
+
+    .mpo-content-wrapper {
+        position: relative;
+        width: 100%;
+        height: 528px;
+    }
+    .mpo-content-slider {
+        min-height: 528px;
+        position: absolute;
+        width: 100%;
+        background: #fff;
+        z-index: 999;
+        opacity: 0;
+        transition: .5s opacity ease-in-out;
+    }
+
+    .nav {
+        position: absolute;
+        top: calc(264px - 35px);
+        width: 35px;
+        height: 35px;
+        padding: 2px;
+        color: #000;
+        z-index: 9999;
+        background: #fff;
+        border-radius: 50%;
+        display: flex;
+        flex-flow: row;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        box-shadow: 1px 1px 13px #c8c8c8;
+        cursor: pointer;
+    }
+
+    span.previous.nav {
+        left: -72px;
+    }
+
+    span.next.nav {
+        right: -72px;
+    }
+
 </style>
 <?php
     $names = $user->firstname ? $user->lastname.' '.$user->firstname : $user->corporate_name;
@@ -591,132 +634,191 @@
                     <h5 class="modal-title">Media Purchase Order</h5>
                 </div> --}}
                 <div class="modal-body body-content">
-                    @if (($type === env('SINGLE_BOOKING_TYPE') && count($asset_pending_recs)))    
+                    @if (($type === env('SINGLE_BOOKING_TYPE') && count($asset_pending_recs) && $asset_pending_recs[0]))    
                         <input type="hidden" name="reserve_id" id="reserve_id" value="{{$asset_pending_recs[0]->trnx_id}}">
                         <input type="hidden" name="booking_id" id="booking_id" value="{{ $asset_pending_recs[0]->id }}">
                         <input type="hidden" name="actual_bal" id="actual_bal" value="{{ number_format(str_replace(',', '', $asset_pending_recs[0]->payment_remaining), 2, '.', ',') }}">
                         <input type="hidden" name="type" id="type" value="{{$type}}">
-                        @elseif ($type === env('CAMPAIGN_BOOKING_TYPE') && $campaign)
-                        <input type="hidden" name="reserve_id" id="reserve_id" value="{{$campaign->assetBookings[0]->trnx_id}}">
+                    @elseif ($type === env('CAMPAIGN_BOOKING_TYPE') && $campaign)
+                        <input type="hidden" name="reserve_id" id="reserve_id" value="{{$campaign->trnx_id}}">
                         <input type="hidden" name="campaign_id" id="campaign_id" value="{{$campaign->id}}">
                         <input type="hidden" name="actual_bal" id="actual_bal" value="{{ number_format(str_replace(',', '', ($campaign->total_price - $campaign->total_payment)), 2, '.', ',') }}">
                         <input type="hidden" name="type" id="type" value="{{$type}}">
                     @endif
                     <div class="content">
                         <div class="law-context hide_print" style="padding: 5px; text-align: justify;">
-                            <h2 class="fs-30 mb-10 mt-20 text-center">{{$userInfo->name}}</h2>
-                            <p class="fs-15 mb-20 text-center">{{$userInfo->address}}</p>
-                            <h2 class="fs-15 mb-20 text-center">Media Purchase Order</h2>
+                            <h2 class="fs-30 mb-10 mt-20 text-center">{{$user->userInfo->name}}</h2>
+                            <p class="fs-15 mb-20 text-center">{{$user->userInfo->address}}</p>
+                            <h2 class="fs-15 mb-10 text-center">Media Purchase Order</h2>
                             <div class="mb-20">
                                 <table class="tbl">
                                     <thead>
                                         <tr>
-                                            <th>Product/Service: {{ucfirst($type) . " Asset Booking"}}</th>
-                                            @if ($type === env('SINGLE_BOOKING_TYPE'))
+                                            <?php 
+                                                $bType = env('SINGLE_BOOKING_TYPE');
+                                                if ($type === env('CAMPAIGN_BOOKING_TYPE')){
+                                                    $bType = 'multiple';
+                                                }
+                                            ?>
+                                            <th>Product/Service: {{ucfirst($bType) . " Asset Booking"}}</th>
+                                            @if ($type === env('SINGLE_BOOKING_TYPE') && count($asset_pending_recs) > 0 && $asset_pending_recs[0])
                                             <th class="text-right">Order Number:{{$asset_pending_recs[0]->trnx_id}}</th>
-                                            @else
-                                            <th class="text-right">Order Number: Campaign</th>
+                                            @elseif ($type === env('CAMPAIGN_BOOKING_TYPE') && $campaign)
+                                            <th class="text-right">Order Number: {{$campaign->trnx_id}}</th>
                                             @endif
                                         </tr>
                                     </thead>
                                 </table>
                             </div>
-                            <div class="text-left mb-20">
-                                <p class="fs-13 mb-0">{{$operator && $operator->corporateName}}</p>
-                                <p class="fs-13 mb-0">{{$operator && $operator->address}}</p>
-                            </div>
-                            <table class="tablex">
-                                @if ($type === env('SINGLE_BOOKING_TYPE'))
-                                    <?php $real_asset_detail = $asset_pending_recs[0]->real_asset_details; ?>
-                                    @if ($real_asset_detail)
-                                        <thead>
-                                            <tr>
-                                                <th>S/no.</th>
-                                                <th>Location</th>
-                                                <th width="50%">Address</th>
-                                                <th>Board Type</th>
-                                                <th>Duration</th>
-                                                <th>Amount</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>1.</td>
-                                                <td>{{ $real_asset_detail->location }}</td>
-                                                <td>{{ $real_asset_detail->address }}</td>
-                                                <td>{{ ucfirst($real_asset_detail->asset_category) }}</td>
-                                                <td>{{ $asset_pending_recs[0]->start_date . " - " .  $asset_pending_recs[0]->end_date}}</td>
-                                                <td>&#8358;{{ $asset_pending_recs[0]->price }}</td>
-                                            </tr>
-                                        </tbody>
-                                    @endif
-                                @else
-                                    @if ($campaign)
-                                        <thead>
-                                            <tr>
-                                                <th>S/no.</th>
-                                                <th width="50%">Address</th>
-                                                <th>Board Type</th>
-                                                <th>Duration</th>
-                                                <th>Amount</th>
-                                            </tr>
-                                        </thead>
-                                        @if (count($campaign->assetBookings))
-                                            <tbody>
-                                            @foreach ($campaign->assetBookings as $key => $assetBookings)
-                                                <?php $asset = $assetBookings->asset; ?>
-                                                <tr>
-                                                    <td>{{$key+1}}.</td>
-                                                    <td>{{ $asset->address }}</td>
-                                                    <td>{{ ucfirst($asset->asset_category) }}</td>
-                                                    <td>{{ $assetBookings->start_date . " - " .  $assetBookings->end_date}}</td>
-                                                    <td>&#8358;{{ $assetBookings->price }}</td>
-                                                </tr>
-                                            @endforeach
-                                            </tbody>
-                                        @endif
-                                    @endif
-                                @endif
-                            </table>
+                            {{-- MPO content slider start here --}}
+                            <div class="mpo-content-wrapper">
+                                <?php $total_price_in_words = ""; ?>
+                                @if ($type === env('CAMPAIGN_BOOKING_TYPE') && $campaign)
+                                    <?php $total_price_in_words = $campaign->total_price_in_words; ?>
+                                    @foreach ($campaign->assetBookings as $key => $assetBooking)
+                                        <?php 
+                                            $operator = $assetBooking->operator; 
+                                            $asset = $assetBooking->asset;
+                                        ?>
+                                        <div class="mpo-content-slider">
+                                            <div class="text-left mb-20">
+                                                <h2 class="fs-13 mb-0">{{$operator ? $operator->corporateName : ''}}</h2>
+                                                <p class="fs-13 mb-0">{{$operator ? $operator->address : ''}}</p>
+                                            </div>
+                                            <table class="tablex">
+                                                <thead>
+                                                    <tr>
+                                                        <th>S/no.</th>
+                                                        <th>Location</th>
+                                                        <th width="30%">Address</th>
+                                                        <th>Board Type</th>
+                                                        <th>Duration</th>
+                                                        <th>Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>{{$key+1}}.</td>
+                                                        <td>{{ $asset->location }}</td>
+                                                        <td>{{ $asset->address }}</td>
+                                                        <td>{{ ucfirst($asset->asset_category) }}</td>
+                                                        <td>{{ $assetBooking->start_date . " - " .  $assetBooking->end_date}}</td>
+                                                        <td>&#8358;{{ $assetBooking->price }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                            <p class="fs-16 mb-20 mt-20">Amount in words: <span style="color: #d71515">{{$assetBooking->price_in_words}}</span> </p>
+                                            <div class="mb-20 mt-20">
+                                                <p class="fs-15 mb-20 mt-20">Terms &amp; Conditions</p>
+                                                <ol class="mpo">
+                                                    <li class="fs-13">Ensure materials are properly tensioned.</li>
+                                                    <li class="fs-13">Ensure monthly dated &amp; coded pictures are provided by the 25<sup>th</sup> of every month.</li>
+                                                    <li class="fs-13">Payment: within 45 days</li>
+                                                    <li class="fs-13">In charge commences on showing proof of posting.</li>
+                                                </ol>
+                                            </div>
+                                            <div class="mb-20">
+                                                <table class="tbl">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>
+                                                                <p class="fs-13 mb-0">Issuer: {{$user->userInfo->name}}</p>
+                                                                <p class="fs-13 mb-0">Name: {{$user->userInfo->name}}</p>
+                                                                <p class="fs-13 mb-0">Designation: {{$user->userInfo->designation}}</p>
+                                                                <p class="fs-13 mb-0">Date: {{date('Y-m-d')}}</p>
+                                                                <p class="fs-13 mb-0">Signature  _____________</p>
+                                                            </th>  
+                                                            <th style="width: 40%;">
+                                                                <p class="fs-13 mb-0 text-right">To: {{$operator ? $operator->corporateName : ''}}</p>
+                                                                <p class="fs-13 mb-0 text-right">Name:{{$operator ? $operator->corporateName : ''}}</p>
+                                                                <p class="fs-13 mb-0 text-right">Designation: {{$operator ? $operator->designation : ''}}</p>
+                                                                <p class="fs-13 mb-0 text-right">Date: {{date('Y-m-d')}}</p>
+                                                                <p class="fs-13 mb-0 text-right">Signature  _____________</p>
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                    <span class="previous nav">&lArr;</span>
+                                    <span class="next nav">&rArr;</span>
+                                @elseif($type === env('SINGLE_BOOKING_TYPE') && count($asset_pending_recs) > 0 && $asset_pending_recs[0]) 
+                                    <div class="mpo-content-slider">
+                                        <?php 
+                                            $asset_pending_rec = $asset_pending_recs[0];
+                                            $operator = $asset_pending_rec->operator; 
+                                            $real_asset_detail = $asset_pending_rec->real_asset_details;
+                                        ?>
+                                        <div class="text-left mb-20">
+                                            <h2 class="fs-13 mb-0">{{$operator ? $operator->corporateName : ''}}</h2>
+                                            <p class="fs-13 mb-0">{{$operator ? $operator->address : ''}}</p>
+                                        </div>
 
-                            @if ($type === env('SINGLE_BOOKING_TYPE'))
-                            <p class="fs-16 mb-20 mt-20">Amount in words: <span style="color: #d71515">{{$asset_pending_recs[0]->total_price_in_words}}</span></p>
-                            @else
-                            <p class="fs-16 mb-20 mt-20">Amount in words: <span style="color: #d71515">{{$campaign->total_price_in_words}}</span> </p>
+                                        <table class="tablex">
+                                            <thead>
+                                                <tr>
+                                                    <th>S/no.</th>
+                                                    <th>Location</th>
+                                                    <th width="30%">Address</th>
+                                                    <th>Board Type</th>
+                                                    <th>Duration</th>
+                                                    <th>Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>1.</td>
+                                                    <td>{{ $real_asset_detail->location }}</td>
+                                                    <td>{{ $real_asset_detail->address }}</td>
+                                                    <td>{{ ucfirst($real_asset_detail->asset_category) }}</td>
+                                                    <td>{{ $asset_pending_rec->start_date . " - " .  $asset_pending_rec->end_date}}</td>
+                                                    <td>&#8358;{{ $asset_pending_rec->price }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        <p class="fs-16 mb-20 mt-20">Amount in words: <span style="color: #d71515">{{$asset_pending_rec->total_price_in_words}}</span></p>
+
+                                        <div class="mb-20 mt-20">
+                                            <p class="fs-15 mb-20 mt-20">Terms &amp; Conditions</p>
+                                            <ol class="mpo">
+                                                <li class="fs-13">Ensure materials are properly tensioned.</li>
+                                                <li class="fs-13">Ensure monthly dated &amp; coded pictures are provided by the 25<sup>th</sup> of every month.</li>
+                                                <li class="fs-13">Payment: within 45 days</li>
+                                                <li class="fs-13">In charge commences on showing proof of posting.</li>
+                                            </ol>
+                                        </div>
+                                        <div class="mb-20">
+                                            <table class="tbl">
+                                                <thead>
+                                                    <tr>
+                                                        <th>
+                                                            <p class="fs-13 mb-0">Issuer: {{$user->userInfo->name}}</p>
+                                                            <p class="fs-13 mb-0">Name: {{$user->userInfo->name}}</p>
+                                                            <p class="fs-13 mb-0">Designation: {{$user->userInfo->designation}}</p>
+                                                            <p class="fs-13 mb-0">Date: {{date('Y-m-d')}}</p>
+                                                            <p class="fs-13 mb-0">Signature  _____________</p>
+                                                        </th>   
+                                                        <th style="width: 40%;">
+                                                            <p class="fs-13 mb-0 text-right">To: {{$operator ? $operator->corporateName : ''}}</p>
+                                                            <p class="fs-13 mb-0 text-right">Name:{{$operator ? $operator->corporateName : ''}}</p>
+                                                            <p class="fs-13 mb-0 text-right">Designation: {{$operator ? $operator->designation : ''}}</p>
+                                                            <p class="fs-13 mb-0 text-right">Date: {{date('Y-m-d')}}</p>
+                                                            <p class="fs-13 mb-0 text-right">Signature  _____________</p>
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                            </table>
+                                        </div>
+                                    </div>
+                                @endif
+
+                            </div>
+                            {{-- MPO content slider end here --}}
+                            @if ($type === env('CAMPAIGN_BOOKING_TYPE') && $campaign)
+                            <p class="fs-16 mb-20">Total Amount in words: <span style="color: #d71515">{{$total_price_in_words}}</span> </p>
                             @endif
-                            <div class="mb-20 mt-20">
-                                <p class="fs-15 mb-20 mt-20">Terms &amp; Conditions</p>
-                                <ol class="mpo">
-                                    <li class="fs-13">Ensure materials are properly tensioned.</li>
-                                    <li class="fs-13">Ensure monthly dated &amp; coded pictures are provided by the 25<sup>th</sup> of every month.</li>
-                                    <li class="fs-13">Payment: within 45 days</li>
-                                    <li class="fs-13">In charge commences on showing proof of posting.</li>
-                                </ol>
-                            </div>
-                            <div class="mb-20">
-                                <table class="tbl">
-                                    <thead>
-                                        <tr>
-                                            <th>
-                                                <p class="fs-13 mb-0">For: {{$userInfo->name}}</p>
-                                                <p class="fs-13 mb-0">Name: {{$userInfo->name}}</p>
-                                                <p class="fs-13 mb-0">Designation: {{$userInfo->designation}}</p>
-                                                <p class="fs-13 mb-0">Date: {{date('Y-m-d')}}</p>
-                                                <p class="fs-13 mb-0">Signature  _____________</p>
-                                            </th>
-                                            @if ($operator && $type === env('SINGLE_BOOKING_TYPE'))    
-                                            <th class="text-right">
-                                                <p class="fs-13 mb-0 text-right">From: {{$operator->corporateName}}</p>
-                                                <p class="fs-13 mb-0 text-right">Name:{{$operator->corporateName}}</p>
-                                                <p class="fs-13 mb-0 text-right">Designation: {{$operator->designation}}</p>
-                                                <p class="fs-13 mb-0 text-right">Date: {{date('Y-m-d')}}</p>
-                                                <p class="fs-13 mb-0 text-right">Signature  _____________</p>
-                                            </th>
-                                            @endif
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
                         </div>
                         <div class="payment-sched-printable-content" id="payment-sched-printable-content"></div>
                     </div>
@@ -779,7 +881,7 @@
                                 </tr>
                                 @endif
                                 <tr>
-                                    <th class="fs-14">Actual Amount</th>
+                                    <th class="fs-14">Total amount to be paid</th>
                                     <td class="fs-14 text-right">
                                         @if ($type === env('SINGLE_BOOKING_TYPE'))
                                         <span id="bal_amt_read"></span>
@@ -818,4 +920,52 @@
 
 </section>
 
+@endsection
+
+@section('asset-details-js')
+<script type="text/javascript">
+    $(document).ready(function() {
+        if ($("span.previous.nav") && $("span.next.nav")) {
+
+            let current = $(".mpo-content-slider:first-child");
+            let index = current.index();
+            current.css("opacity", 1);
+            let length = $(".mpo-content-slider").length - 1;
+            $("span.previous.nav").on("click", function() {
+
+                if (index <= 0) {
+                    return ;
+                }
+                
+
+                current.css({
+                    "opacity": 0,
+                });
+                current = current.prev()
+                current.css({
+                    "opacity": 1,
+                });
+
+                index--;
+            });
+
+            $("span.next.nav").on("click", function() {
+
+                if (index >= length) {
+                    return ;
+                }
+                
+                current.css({
+                    "opacity": 0,
+                });
+                current = current.next();
+                current.css({
+                    "opacity": 1,
+                });
+                
+                index++;
+            });
+        }
+    });
+</script>
 @endsection

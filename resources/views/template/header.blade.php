@@ -208,7 +208,7 @@
                                     <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/fast-track') }}">FastTrack Booking</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/view/campaign') }}">Create Campaign</a>
+                                    <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/view/campaign') }}">Multiple Booking</a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/material') }}"> Material Upload</a>
@@ -237,7 +237,7 @@
                                     <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/transactions/pending') }}">Pending Transactions</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/transactions/pending/campaign') }}">Campaign Transactions</a>
+                                    <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/transactions/pending/campaign') }}">Multiple Booking Transactions</a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item sm-fs-13" href="{{ url('/advertiser/individual/transactions/historical') }}">Historical Transactions</a>

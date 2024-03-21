@@ -106,6 +106,7 @@ class IndividualDashboardController extends Controller
             $campaign = $this->get_campaign_by_id($booking_id);
         } else {
             $asset_pending_recs = $this->get_transaction_receipt(0, $booking_id, $fields);
+            $asset_pending_recs[0]->operator = null;
         }
 
         $userInfo = new \stdClass();
@@ -127,18 +128,38 @@ class IndividualDashboardController extends Controller
                 $userInfo->designation = $individual->designation;
             }
         }
-        $operator = new \stdClass();
+
+        // dd($user);
+        $user->userInfo = $userInfo;
+
         if (count($asset_pending_recs)) {
             $operatorId = $asset_pending_recs[0]->asset->uploaded_by;
-            $operatorRec = $this->get_operator_by_id($operatorId);
-            $operator->corporateName = $operatorRec->corporate_name;
-            $operator->address = $operatorRec->address ? $operatorRec->address : $operatorRec->oaan_number . ', ' . $operatorRec->email . ', ' . $operatorRec->phone;
-            $operator->designation = "CEO";
+            $operator = $this->build_operator($operatorId);
+            $asset_pending_recs[0]->operator = $operator;
+        }
+        else if ($campaign) {
+            foreach ($campaign->assetBookings as $key => &$assetBooking) {
+                $operatorId = $assetBooking->asset->uploaded_by;
+                $operator = $this->build_operator($operatorId);
+                $assetBooking->operator = $operator;
+                $campaign->trnx_id = $assetBooking->trnx_id;
+                $assetBooking->price_in_words = $this->amount_in_words(floatval(str_replace(",", "", $assetBooking->price)));
+            }
         }
 
-        // dd($user, $userInfo, $operator, env('INDIVIDUAL_USER_TYPE'));
+        // dd($campaign);
         $title = "Transaction Payment Details";
-        return view('advertiser.transactionpaymentsdetail', \compact('campaign', 'asset_pending_recs', 'user', 'title', 'userInfo', 'operator', 'type'));
+        return view('advertiser.transactionpaymentsdetail', \compact('campaign', 'asset_pending_recs', 'user', 'title', 'type'));
+    }
+
+    function build_operator($operatorId) {
+        $operator = new \stdClass();
+        $operatorRec = $this->get_operator_by_id($operatorId);
+        $operator->corporateName = $operatorRec->corporate_name;
+        $operator->address = $operatorRec->address ? $operatorRec->address : $operatorRec->email;
+        $operator->designation = "CEO";
+
+        return $operator;
     }
 
 
@@ -747,7 +768,7 @@ class IndividualDashboardController extends Controller
     public function create_campaign_view(int $campaign_id = 0)
     {
         $user = \Request::get('user');
-        $assets = $this->getAvailableAsset();
+        $assets = $this->getAvailableAsset2();
         $asset_types = AssetType::all();
 
         $campaigns_found = null;

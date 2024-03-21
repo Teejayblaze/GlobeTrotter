@@ -465,8 +465,8 @@
         function attach_date_range_picker() {
           $('.daterangepickerx').daterangepicker({
               autoUpdateInput: false,
-              startDate: new Date(today.getFullYear(), today.getMonth()+1, today.getDate(), 0, 0, 0, 0),
-              minDate: new Date(today.getFullYear(), today.getMonth()+1, today.getDate(), 0, 0, 0, 0),
+              startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0),
+              minDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0),
               locale: {
                   format: 'DD/MM/YYYY'
               } 
