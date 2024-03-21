@@ -747,7 +747,7 @@ class IndividualDashboardController extends Controller
     public function create_campaign_view(int $campaign_id = 0)
     {
         $user = \Request::get('user');
-        $assets = $this->getAvailableAsset();
+        $assets = $this->getAvailableAsset2();
         $asset_types = AssetType::all();
 
         $campaigns_found = null;
