@@ -556,6 +556,7 @@
                                                                         <!-- Merchant Id value should be changed to your merchant id-->
                                                                         {{--  --}}
                                                                         <input type="hidden" id="merchantid" name="merchantid" value="{{env("APP_GLOBAL_PAY_MERCHANT_ID")}}">
+                                                                        <input type="hidden" id="booking_type" name="booking_type" value="{{$type}}">
                                                                     </form>
                                                                 </div>
                                                             </td>

@@ -163,10 +163,11 @@ class IndividualDashboardController extends Controller
     }
 
 
-    public function paid_transaction_payments_detail(int $booking_id = 0)
+    public function paid_transaction_payments_detail(string $type = 'single', int $booking_id = 0)
     {
         $user = \Request::get('user');
-        $paid_tranx_recs = $this->get_transaction_receipt(1, $booking_id);
+        $fields = ['type' => $type];
+        $paid_tranx_recs = $this->get_transaction_receipt(1, $booking_id, $fields);
         $title = "Paid Transaction Details";
         return view('advertiser.paidtransactionpaymentsdetail', \compact('paid_tranx_recs', 'user', 'title'));
     }

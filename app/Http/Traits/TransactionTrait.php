@@ -530,6 +530,7 @@ trait TransactionTrait
                         'method'        => $xml->record->channel,
                         'status'        => $xml->record->payment_status,
                         'txnref'        => $xml->record->txnref,
+                        'booking_type'  => $xml->record->booking_type,
                         'amount'        => $amount,
                         'txid'          => $txnref,
                         'currency'      => $xml->record->field_values->field_values->field[2]->currency,

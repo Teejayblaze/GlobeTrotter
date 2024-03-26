@@ -9,6 +9,7 @@ use App\PlatformSettings;
 use App\AssetBooking;
 use App\Individual;
 use App\Corporate;
+use App\CampaignDetail;
 use App\AssetGracePeriod;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -241,48 +242,77 @@ class TransactionController extends Controller
                     
                     $this->log('Info', 'Successfully Logged Payment for Asset with the Description: '. $desc .' and Transaction Number: '.$txnid);
                    
-                    $assetBooking = AssetBooking::where([
-                        ['id', '=', $trans->asset_booking_id],
-                        ['trnx_id', '=', $trans->asset_booking_ref],
-                    ])->first();
-                   
-                    $assetBooking->bank_ref = 1;
+                    $isSaved = false;
+                    if ($trans->asset_booking_id === -1) {
+                        $type = env('CAMPAIGN_BOOKING_TYPE');
+                        $campain_assets = CampaignDetail::where(['campaign_id' => $trans->campaign_id])->pluck('asset_id')->toArray();
+                        $assetBookings = AssetBooking::whereIn('asset_id', $campain_assets)->where(['type' => $type])->get();
+                        $assetBookingsCopy = $assetBookings;
+                        $amountPaid = floatval(str_replace(',', '', $trans->amount));
+                        $cnt = $assetBookingsCopy->count();
+                        $spreadAmount = floatval($amountPaid/$cnt);
+        
+                        foreach($assetBookings as $key => $assetBooking) {
+                            $amount_paid = ($spreadAmount + floatval(str_replace(",", "", $assetBooking->amount_paid)));
+                            $assetBooking->bank_ref = 1;
+                            $assetBooking->amount_paid = number_format($amount_paid, 2, '.', ',');
+                            $assetBooking->save();
+                            $isSaved = true;
+                        }
+                    }
+                    else {
+                        $assetBooking = AssetBooking::where([
+                            ['id', '=', $trans->asset_booking_id],
+                            ['trnx_id', '=', $trans->asset_booking_ref],
+                        ])->first();
+                       
+                        $assetBooking->bank_ref = 1;
+                        $amount_paid = ($amount + floatval(str_replace(",", "", $assetBooking->amount_paid)));
+                        $assetBooking->amount_paid = number_format($amount_paid, 2, '.', ',');
+                        $assetBooking->save();
+                        $isSaved = true;
+                    }
+
+
 
                     try {
-                        if ($assetBooking->save()) {
+                        if ($isSaved) {
 
-                            $gracePeriods = AssetGracePeriod::where([['asset_booking_id', '=', $trans->asset_booking_id],['booked_id', '=', $trans->asset_booking_ref]]);
+                            if ($trans->asset_booking_id !== -1) {
 
-                            if ( $trans->first_pay ) { // Flag first 10% as a completed transaction.
-                                $gracePeriods = $gracePeriods->first();
-                                $gracePeriods->completed = 1;
-                                $gracePeriods->save();
-                            } else {
+                                $gracePeriods = AssetGracePeriod::where([['asset_booking_id', '=', $trans->asset_booking_id],['booked_id', '=', $trans->asset_booking_ref]]);
 
-                                $paid_trans = Transaction::where([
-                                    ['paid', '=', 1], 
-                                    ['bank_ref_number', '<>', null],
-                                    ['subscription', '=', 0],
-                                    ['asset_booking_ref', '=', $trans->asset_booking_ref],
-                                    ['asset_booking_id', '=', $trans->asset_booking_id],
-                                ])->get();
+                                if ( $trans->first_pay ) { // Flag first 10% as a completed transaction.
+                                    $gracePeriods = $gracePeriods->first();
+                                    $gracePeriods->completed = 1;
+                                    $gracePeriods->save();
+                                } else {
 
-                                $perc_paid = 0;
-                                
-                                if ( count($paid_trans) ) {
-                                    foreach ($paid_trans as $key => $paid_tran) { 
-                                        // Stripe out the % sign on the percent number an convert to integer
-                                        $perc_paid += intval( substr($paid_tran->percentage, 0, (strlen($paid_tran->percentage)-1)) );
-                                    }
+                                    $paid_trans = Transaction::where([
+                                        ['paid', '=', 1], 
+                                        ['bank_ref_number', '<>', null],
+                                        ['subscription', '=', 0],
+                                        ['asset_booking_ref', '=', $trans->asset_booking_ref],
+                                        ['asset_booking_id', '=', $trans->asset_booking_id],
+                                    ])->get();
 
-                                    $gracePeriods = $gracePeriods->orderBy('id', 'desc')->first();
-                                    $grace_perc = intval( substr($gracePeriods->percentage, 0, (strlen($gracePeriods->percentage)-1)) );
+                                    $perc_paid = 0;
+                                    
+                                    if ( count($paid_trans) ) {
+                                        foreach ($paid_trans as $key => $paid_tran) { 
+                                            // Stripe out the % sign on the percent number an convert to integer
+                                            $perc_paid += intval( substr($paid_tran->percentage, 0, (strlen($paid_tran->percentage)-1)) );
+                                        }
 
-                                    if ( $perc_paid === $grace_perc ) { 
-                                        // accumulate the payment history on this asset and check against the 90% balance 
-                                        // payment and flag as completed transaction if they are same.
-                                        $gracePeriods->completed = 1;
-                                        $gracePeriods->save();
+                                        $gracePeriods = $gracePeriods->orderBy('id', 'desc')->first();
+                                        $grace_perc = intval( substr($gracePeriods->percentage, 0, (strlen($gracePeriods->percentage)-1)) );
+
+                                        if ( $perc_paid === $grace_perc ) { 
+                                            // accumulate the payment history on this asset and check against the 90% balance 
+                                            // payment and flag as completed transaction if they are same.
+                                            $gracePeriods->completed = 1;
+                                            $gracePeriods->save();
+                                        }
                                     }
                                 }
                             }
@@ -310,6 +340,9 @@ class TransactionController extends Controller
                $this->log('Critical', $qe->getMessage());
                return response()->json(['status' => false, 'errors' => 'Apologies, Could not log Payment at this Time.', 'success' => null]);
             }
+        }
+        else {
+            return response()->json(['status' => false, 'errors' => 'Apologies, You have already made payment for this transaction.', 'success' => null]);
         }
     }
 
@@ -577,6 +610,13 @@ class TransactionController extends Controller
         if(strtolower($request->status) === 'successful') {
             if(($transaction = $this->get_transaction_by_ref($request->txnref)) && $transaction != null) {
                 // We need to reQuery another endpoint for verification of payment before giving the user it's value.
+                $type = env('SINGLE_BOOKING_TYPE');
+                $asset_booking_id = $transaction->asset_booking_id;
+                if ($transaction->asset_booking_id === -1) {
+                    $type = env('CAMPAIGN_BOOKING_TYPE');
+                    $asset_booking_id = $transaction->campaign_id;
+                }
+
                 $queryResult = $this->reQueryGlobalPay($request->txnref, $transaction->amount);
                 if($queryResult['status']) {
                     if($transaction->subscription) {
@@ -592,18 +632,19 @@ class TransactionController extends Controller
                     $queryResult['message']['desc'] = $transaction->asset_booking_ref;
                     $result = $this->create_bank_transaction(null, $queryResult['message']);
                     $resultContent = $result->getData();
-                    if($result && $resultContent->status) {
-                       return redirect('/advertiser/individual/pending/transaction/payments/detail/'.$transaction->asset_booking_id)->with(['flash_message' => $resultContent->success]);
+                    if($result && $resultContent && $resultContent->status) {
+                       return redirect('/advertiser/individual/pending/transaction/payments/detail/'.$type.'/'.$asset_booking_id)->with(['flash_message' => $resultContent->success]);
                     }
                     else {
-                        return redirect('/advertiser/individual/pending/transaction/payments/detail/'.$transaction->asset_booking_id)->withErrors(['errors' => [$resultContent->errors]]);
+                        // dd("hurray");
+                        return redirect('/advertiser/individual/pending/transaction/payments/detail/'.$type.'/'.$asset_booking_id)->withErrors(['errors' => [$resultContent->errors]]);
                     }
                 }else{
                     if($transaction->subscription) {
                         \session()->put('transaction', $transaction);
                         return redirect('/operator/subscription')->with('error_message', 'Unable to make payment for annual subscription.');
                     }
-                    return redirect('/advertiser/individual/pending/transaction/payments/detail/'.$transaction->asset_booking_id)->withErrors(['errors' => [$queryResult['message']]]);
+                    return redirect('/advertiser/individual/pending/transaction/payments/detail/'.$type.'/'.$asset_booking_id)->withErrors(['errors' => [$queryResult['message']]]);
                 }
             }
             else {
@@ -660,6 +701,36 @@ class TransactionController extends Controller
             }
         } else {
             return redirect('/advertiser/individual/transactions/pending')->withErrors(['errors' => ["Apologies, transaction supplied was invalid."]]);
+        }
+    }
+
+
+    public function createAdminScriptTag(Request $request) {
+        $token = $request->header('X-Shopify-Access-Token');
+        $adminUrl = $request->post_url;
+        $data = json_decode(json_encode($request->script_tag), true);
+        $header = ['Content-type: application/json', 'X-Shopify-Access-Token: '.$token];
+
+        $ch = curl_init($adminUrl);
+
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+
+        try {
+            
+            $result = curl_exec($ch);
+            $info = curl_getinfo($ch);
+            // dd($info, $data, $header);
+            curl_close($ch);
+            $this->log('Info', json_encode($result));
+            return $result;
+
+        } catch( \Exception $ex ) {
+            curl_close($ch);
+            $err = curl_error($ch);
+            $this->log('Critical', $err);
         }
     }
 }

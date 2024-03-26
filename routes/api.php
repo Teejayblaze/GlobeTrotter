@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::middleware(['cors'])->post('/v1/admin/script-tag', 'Asset\TransactionController@createAdminScriptTag');
+
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });

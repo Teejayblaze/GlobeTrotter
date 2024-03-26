@@ -96,7 +96,7 @@ Route::namespace('Advertiser')->prefix('advertiser')->group(function () {
         Route::get('/payment-history', 'IndividualDashboardController@payment_history')->name('individaulPaymentHistory'); 
         Route::get('/transactions/historical', 'IndividualDashboardController@transaction_history')->name('individaulTransactionHistory');
         Route::get('/pending/transaction/payments/detail/{type}/{booking_id}', 'IndividualDashboardController@pending_transaction_payments_detail');
-        Route::get('/paid/transaction/payments/detail/{booking_id}', 'IndividualDashboardController@paid_transaction_payments_detail');
+        Route::get('/paid/transaction/payments/detail/{type}/{booking_id}', 'IndividualDashboardController@paid_transaction_payments_detail');
         Route::get('/pending/transaction/payments/regenerate-reference/{booking_id}/{tranx_id}', 'IndividualDashboardController@regenerateTransactionReference'); 
         Route::get('/generate/nibbs-transaction-code', 'IndividualDashboardController@generate_nibbs_transaction_code');
 
